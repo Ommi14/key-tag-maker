@@ -91,9 +91,12 @@
     <div class="row"><span>Key length</span><input id="keyLength" type="range" min="40" max="100" step="1" value="70"><output id="keyLengthO">70 mm</output></div>
     <div class="row"><span>Key width</span><input id="keyWidth" type="range" min="20" max="50" step="1" value="30"><output id="keyWidthO">30 mm</output></div>
     <div class="row"><span>Key thickness</span><input id="keyThickness" type="range" min="3" max="6" step="0.5" value="4"><output id="keyThicknessO">4 mm</output></div>
+    <div class="row"><span>Letter height</span><input id="bold" type="range" min="4" max="6" step="0.1" value="4"><output id="boldO">4.0 mm</output></div>
+    <div class="row"><span>Base color</span><input id="baseColor" type="color" value="#f2f2ee"></div>
+    <div class="row"><span>Panel color</span><input id="panelColor" type="color" value="#7d0d1e"></div>
+    <div class="row"><span>Letter color</span><input id="letterColor" type="color" value="#ffffff"></div>
     <div class="row"><span>Text size</span><input id="size" type="range" min="40" max="100" value="100"><output id="sizeO">100%</output></div>
     <div class="row"><span>Side space</span><input id="margin" type="range" min="1" max="10" step="0.5" value="4"><output id="marginO">4 mm</output></div>
-    <div class="row"><span>Letter thickness</span><input id="bold" type="range" min="0" max="0.3" step="0.05" value="0.1"><output id="boldO">+0.10</output></div>
     <div class="row"><span>Border line</span><div class="seg" id="border"><button data-v="1" class="on">On</button><button data-v="0">Off</button></div></div>
     <div class="row"><span>Tags per file</span><div class="seg" id="count"><button data-v="1" class="on">1</button><button data-v="4">4</button><button data-v="8">8</button></div></div>
 
@@ -196,9 +199,10 @@ function segVal(id){ return +$(id).querySelector('.on').dataset.v; }
 ['border','count','picPos','picInv'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
   $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); schedule();
 }));
-[['picSize','picSizeO',v=>v+'%'],['picThr','picThrO',v=>v],['size','sizeO',v=>v+'%'],['margin','marginO',v=>v+' mm'],['bold','boldO',v=>'+'+(+v).toFixed(2)],['keyLength','keyLengthO',v=>v+' mm'],['keyWidth','keyWidthO',v=>v+' mm'],['keyThickness','keyThicknessO',v=>v+' mm']].forEach(([i,o,f]) => {
+[['picSize','picSizeO',v=>v+'%'],['picThr','picThrO',v=>v],['size','sizeO',v=>v+'%'],['margin','marginO',v=>v+' mm'],['bold','boldO',v=>(+v).toFixed(1)+' mm'],['keyLength','keyLengthO',v=>v+' mm'],['keyWidth','keyWidthO',v=>v+' mm'],['keyThickness','keyThicknessO',v=>v+' mm']].forEach(([i,o,f]) => {
   $(i).oninput = () => { $(o).textContent = f($(i).value); schedule(); };
 });
+['baseColor','panelColor','letterColor'].forEach(id => $(id).oninput = schedule);
 $('font').onchange = schedule; txt.oninput = schedule;
 
 // ---------------- geometry helpers ----------------
@@ -366,13 +370,14 @@ let LAST = null;
 function build(){
   const fontKey = $('font').value;
   const lines = txt.value.split('\n').map(s => s.replace(/\s+$/, '')).filter((s, i, a) => s.length || i < a.length - 1).filter(s => s.length);
-  const sizePct = +$('size').value / 100, margin = +$('margin').value, bold = +$('bold').value;
+  const sizePct = +$('size').value / 100, margin = +$('margin').value, letterThickness = +$('bold').value;
   const withBorder = segVal('border') === 1;
   const keyLength = +$('keyLength').value, keyWidth = +$('keyWidth').value, keyThickness = +$('keyThickness').value;
   const zBase = keyThickness * 0.7, zBurg = keyThickness * 0.85;
+  const zTop = Math.max(letterThickness, zBurg);
   $('zBaseLabel').textContent = `0 – ${zBase.toFixed(2)} mm`;
   $('zBurgLabel').textContent = `${zBase.toFixed(2)} – ${zBurg.toFixed(2)} mm`;
-  $('zTopLabel').textContent = `${zBurg.toFixed(2)} – ${keyThickness.toFixed(2)} mm`;
+  $('zTopLabel').textContent = `${zBurg.toFixed(2)} – ${zTop.toFixed(1)} mm`;
   $('singleBaseLabel').textContent = zBase.toFixed(2);
   $('singleBurgLabel').textContent = zBurg.toFixed(2);
   const sx = keyLength / 70, sy = keyWidth / 30;
@@ -435,10 +440,6 @@ function build(){
     });
   });
   textPaths = clip(textPaths, null, C.ClipType.ctUnion);
-  if (bold > 0 && textPaths.length) {
-    const co = new C.ClipperOffset(2, 0.05 * SC); co.AddPaths(textPaths, C.JoinType.jtRound, C.EndType.etClosedPolygon);
-    const out = new C.Paths(); co.Execute(out, bold * SC); textPaths = out;
-  }
   const artSrc = (withBorder ? textPaths.concat(BORDER) : textPaths).concat(picPaths);
   const artU = clip(artSrc, null, C.ClipType.ctUnion);
   const artEx = artU.length ? clipTree(artU, PANEL, C.ClipType.ctIntersection) : [];
@@ -451,7 +452,7 @@ function build(){
   const textH = textPaths.length ? (tb[3] - tb[1]) / SC : 0, textW = textPaths.length ? (tb[2] - tb[0]) / SC : 0;
   const lineH = lines.length ? textH / lines.length : 0;
 
-  LAST = { artEx, burgEx, lines, missing, textH, textW, lineH, fontKey, keyLength, keyWidth, keyThickness, sx, sy,
+  LAST = { artEx, burgEx, lines, missing, textH, textW, lineH, fontKey, keyLength, keyWidth, keyThickness, letterThickness, sx, sy,
            hasPic: picPaths.length > 0, picW, picH,
            picEmpty: !!(tr && !tr.paths.length) || !!(tr && tr.paths.length && !picPaths.length) };
   draw(); stats();
@@ -469,15 +470,16 @@ function draw(){
   svg.setAttribute('viewBox', `${-LAST.keyLength / 2 - 4} ${-LAST.keyWidth / 2 - 4} ${LAST.keyLength + 8} ${LAST.keyWidth + 8}`);
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.setAttribute('transform', 'scale(1,-1)');
   const P = (d, fill, extra = {}) => { const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d); p.setAttribute('fill', fill); p.setAttribute('fill-rule', 'evenodd'); for (const k in extra) p.setAttribute(k, extra[k]); g.appendChild(p); };
-  P(ringSvg(D.outline[0], LAST.sx, LAST.sy) + ringSvg(D.hole, LAST.sx, LAST.sy), '#fbfbf8', { stroke: '#d9d0c8', 'stroke-width': 0.25 });
-  P(exToSvg(LAST.burgEx), '#7D0D1E');
-  P(exToSvg(LAST.artEx), '#ffffff');
+  P(ringSvg(D.outline[0], LAST.sx, LAST.sy) + ringSvg(D.hole, LAST.sx, LAST.sy), $('baseColor').value, { stroke: '#d9d0c8', 'stroke-width': 0.25 });
+  P(exToSvg(LAST.burgEx), $('panelColor').value);
+  P(exToSvg(LAST.artEx), $('letterColor').value);
   svg.appendChild(g);
 }
 function stats(){
   const el = $('stats'); el.innerHTML = '';
   const add = (html, cls) => { const d = document.createElement('div'); d.className = 'stat' + (cls ? ' ' + cls : ''); d.innerHTML = html; el.appendChild(d); };
   add(`Key <b>${LAST.keyLength} × ${LAST.keyWidth} × ${LAST.keyThickness} mm</b>`);
+  add(`Letter height <b>${LAST.letterThickness.toFixed(1)} mm</b>`);
   if (LAST.picEmpty) add('The picture came out empty — move “Light / dark cut” or try Invert', 'warn');
   if (!LAST.lines.length && !LAST.hasPic) { add('Type a word or add a picture to start'); return; }
   if (LAST.hasPic) add(`Picture <b>${LAST.picW.toFixed(1)} × ${LAST.picH.toFixed(1)} mm</b>`);
@@ -537,7 +539,7 @@ const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',
 
 async function make3mf(){
   const thickness = LAST.keyThickness;
-  const Z = { base: thickness * 0.7, burg: thickness * 0.85, top: thickness };
+  const Z = { base: thickness * 0.7, burg: thickness * 0.85, top: Math.max(LAST.letterThickness, thickness * 0.85) };
   const burg = prism(LAST.burgEx, Z.base, Z.burg);
   const art = prism(LAST.artEx, Z.base, Z.top);
   const count = segVal('count');
@@ -547,9 +549,9 @@ async function make3mf(){
   for (let i = 0; i < D.base.v.length; i += 3) baseV.push(D.base.v[i] * sx, D.base.v[i + 1] * sy, D.base.v[i + 2] * thickness / 4);
   const baseMesh = { v: baseV, f: D.base.f };
   let objs = '';
-  objs += meshXml(2, 'Tag base (white)', 0, baseMesh.v, baseMesh.f);
-  objs += meshXml(3, 'Panel (burgundy)', 1, burg.V, burg.T);
-  objs += meshXml(4, 'Lettering (white)', 0, art.V, art.T);
+  objs += meshXml(2, 'Tag base', 0, baseMesh.v, baseMesh.f);
+  objs += meshXml(3, 'Panel', 1, burg.V, burg.T);
+  objs += meshXml(4, 'Lettering', 2, art.V, art.T);
   const gapX = LAST.keyLength + 8, gapY = LAST.keyWidth + 6;
   const pos = count === 1 ? [[0, 0]]
             : count === 4 ? [[-gapX / 2, -gapY / 2], [gapX / 2, -gapY / 2], [-gapX / 2, gapY / 2], [gapX / 2, gapY / 2]]
@@ -563,7 +565,9 @@ async function make3mf(){
   });
   const model = `<?xml version="1.0" encoding="UTF-8"?>\n<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">` +
     `<metadata name="Title">${esc(word)} key tag</metadata><resources><basematerials id="1">` +
-    `<base name="White PLA" displaycolor="#F2F2EEFF"/><base name="Burgundy PLA" displaycolor="#7D0D1EFF"/></basematerials>` +
+    `<base name="Base color" displaycolor="${$('baseColor').value.replace('#','').toUpperCase()}FF"/>` +
+    `<base name="Panel color" displaycolor="${$('panelColor').value.replace('#','').toUpperCase()}FF"/>` +
+    `<base name="Letter color" displaycolor="${$('letterColor').value.replace('#','').toUpperCase()}FF"/></basematerials>` +
     objs + `</resources><build>${build}</build></model>`;
   const z = new JSZip();
   z.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>');
@@ -588,8 +592,8 @@ async function onDownload(){
     const inner = await make3mf();
     const outer = new JSZip();
     outer.file(name + '.3mf', inner);
-    const t = LAST.keyThickness, zBase = t * 0.7, zBurg = t * 0.85;
-    outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm.\r\n0-${zBase.toFixed(2)} mm white base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm burgundy | ${zBurg.toFixed(2)}-${t.toFixed(2)} mm white letters.\r\nSingle-colour printer: change filament at ${zBase.toFixed(2)} mm (burgundy) and ${zBurg.toFixed(2)} mm (white).\r\nMulti-colour: set parts to white / burgundy.\r\n`);
+    const t = LAST.keyThickness, zBase = t * 0.7, zBurg = t * 0.85, zTop = Math.max(LAST.letterThickness, zBurg);
+    outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm. Letter height: ${LAST.letterThickness.toFixed(1)} mm.\r\n0-${zBase.toFixed(2)} mm base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm panel | ${zBurg.toFixed(2)}-${zTop.toFixed(2)} mm letters.\r\nSingle-colour printer: change filament at ${zBase.toFixed(2)} mm (panel) and ${zBurg.toFixed(2)} mm (letters).\r\nMulti-colour: set the three parts to the selected base, panel and letter colors.\r\n`);
     const blob = await outer.generateAsync({ type: 'blob', compression: 'DEFLATE' });
     if (downloads) await downloads.save({ filename: name + '.zip', data: blob });
     else {   // plain web page (e.g. GitHub Pages): normal browser download
