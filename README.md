@@ -9,7 +9,7 @@ A browser tool that turns a word (Thai or English) and an optional picture into 
 ## Features
 
 - Thai and English text, one or two lines, with an on-screen Thai keyboard
-- Fonts: Sarabun Bold (Thai + English) and DM Serif Display (English)
+- Fonts: Sarabun Bold, DM Serif Display, Tahoma, Browallia New, Cordia New, Dillenia UPC, Iris UPC, Jasmin UPC and Microsoft Sans Serif
 - **Picture:** add a PNG or JPG (a logo, icon or drawing). It is traced into a one-colour shape that prints white, like the letters. You can place it left or right of the text, or use it alone, and set its size, the light/dark cut-off and invert.
 - Border line on/off, letter thickness, side space
 - 1, 4 or 8 tags per file
