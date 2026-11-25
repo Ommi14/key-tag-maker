@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Key Tag Maker – ไทย / English</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --burg:#7D0D1E; --burg-2:#9b1c30; --ink:#2a2421; --muted:#7b716b; --line:#e6ded7;
+    --bg:#f7f2ed; --card:#fffdfb; --chip:#f3ece6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:Sarabun,system-ui,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh}
+  header{padding:22px 28px 6px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  header h1{margin:0;font-size:22px;font-weight:700;color:var(--burg);letter-spacing:.2px}
+  header p{margin:0;color:var(--muted);font-size:14px}
+  main{display:grid;grid-template-columns:minmax(320px,430px) 1fr;gap:22px;padding:14px 28px 32px}
+  @media (max-width:900px){main{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+  label.h{display:block;font-weight:600;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:2px 0 8px}
+  textarea{width:100%;font:600 22px/1.35 Sarabun,sans-serif;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;resize:vertical;min-height:64px;background:#fff;color:var(--ink)}
+  textarea:focus{outline:none;border-color:var(--burg-2)}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .row > span{font-size:14px;min-width:118px}
+  select,input[type=range]{flex:1}
+  select{font:inherit;font-size:14px;padding:6px 8px;border-radius:9px;border:1px solid var(--line);background:#fff}
+  output{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);min-width:52px;text-align:right}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{border:0;background:#fff;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+  .seg button.on{background:var(--burg);color:#fff}
+  .tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+  .tabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 11px;font:inherit;font-size:13px;cursor:pointer}
+  .tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:5px;max-height:230px;overflow:auto;padding-right:2px}
+  .keys button{height:40px;border:1px solid var(--line);background:var(--chip);border-radius:9px;font:600 19px Sarabun,sans-serif;color:var(--ink);cursor:pointer}
+  .keys button:hover{background:#fff;border-color:var(--burg-2)}
+  .keys button.wide{grid-column:span 2;font-size:14px}
+  .tools{display:flex;gap:6px;margin-top:8px}
+  .tools button{flex:1;border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px;font:inherit;font-size:13.5px;cursor:pointer}
+  .preview{display:flex;flex-direction:column;gap:14px}
+  .stage{background:radial-gradient(ellipse at 50% 35%,#fffaf6,#efe6de);border-radius:16px;border:1px solid var(--line);aspect-ratio:16/8;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .stage svg{width:86%;height:auto;filter:drop-shadow(0 10px 16px rgba(60,30,20,.16))}
+  .stats{display:flex;gap:10px;flex-wrap:wrap}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13.5px}
+  .stat b{font-size:15px}
+  .warn{color:#a1460c}
+  .dl{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .btn{background:var(--burg);color:#fff;border:0;border-radius:12px;padding:12px 18px;font:700 16px Sarabun,sans-serif;cursor:pointer}
+  .btn:disabled{opacity:.5;cursor:default}
+  #msg{font-size:13.5px;color:var(--muted)}
+  details{font-size:14px;line-height:1.55}
+  details summary{cursor:pointer;font-weight:600}
+  table{border-collapse:collapse;margin-top:6px}
+  td{padding:3px 10px 3px 0}
+  .pick{display:inline-block;background:var(--ink);color:#fff;border-radius:10px;padding:7px 14px;font-size:14px;cursor:pointer}
+  .pick:hover{background:var(--burg)}
+  .ghost{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+  #picPrev{width:64px;height:64px;border:1px solid var(--line);border-radius:8px;background:#fff;image-rendering:pixelated;margin-left:auto}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px;border:1px solid #0002}
+</style>
+</head>
+<body>
+<header>
+  <h1>Key Tag Maker</h1>
+  <p>พิมพ์คำใหม่ → ดูตัวอย่าง → ดาวน์โหลดไฟล์ 3MF · Type a word, preview it, download a 3MF · 70 × 30 × 4 mm</p>
+</header>
+<main>
+  <section class="card">
+    <label class="h" for="txt">Text / ข้อความ</label>
+    <textarea id="txt" rows="2" spellcheck="false">รฝช.กทม.ดินแดง ๑</textarea>
+    <div class="hint">Press Enter for a second line · กด Enter เพื่อขึ้นบรรทัดใหม่</div>
+
+    <div class="row"><span>Font</span>
+      <select id="font">
+        <option value="sarabun">Sarabun Bold — ไทย + English</option>
+        <option value="dmserif">DM Serif Display — English only</option>
+      </select>
+    </div>
+    <div class="row"><span>Text size</span><input id="size" type="range" min="40" max="100" value="100"><output id="sizeO">100%</output></div>
+    <div class="row"><span>Side space</span><input id="margin" type="range" min="1" max="10" step="0.5" value="4"><output id="marginO">4 mm</output></div>
+    <div class="row"><span>Letter thickness</span><input id="bold" type="range" min="0" max="0.3" step="0.05" value="0.1"><output id="boldO">+0.10</output></div>
+    <div class="row"><span>Border line</span><div class="seg" id="border"><button data-v="1" class="on">On</button><button data-v="0">Off</button></div></div>
+    <div class="row"><span>Tags per file</span><div class="seg" id="count"><button data-v="1" class="on">1</button><button data-v="4">4</button><button data-v="8">8</button></div></div>
+
+    <div style="margin-top:18px">
+      <label class="h">Picture / รูปภาพ</label>
+      <div class="row" style="margin-top:0">
+        <label class="pick">Add picture… / เพิ่มรูป<input type="file" id="pic" accept="image/*" hidden></label>
+        <button id="picClr" class="ghost" hidden>Remove</button>
+        <canvas id="picPrev" width="96" height="96" hidden title="What will print (black = raised white)"></canvas>
+      </div>
+      <div id="picOpts" hidden>
+        <div class="row"><span>Position</span><div class="seg" id="picPos"><button data-v="0" class="on">Left</button><button data-v="1">Right</button><button data-v="2">Picture only</button></div></div>
+        <div class="row"><span>Picture size</span><input id="picSize" type="range" min="40" max="100" value="75"><output id="picSizeO">75%</output></div>
+        <div class="row"><span>Light / dark cut</span><input id="picThr" type="range" min="10" max="245" value="128"><output id="picThrO">128</output></div>
+        <div class="row"><span>Invert</span><div class="seg" id="picInv"><button data-v="0" class="on">Off</button><button data-v="1">On</button></div></div>
+      </div>
+      <div class="hint" id="picHint">Logos, icons and black-on-white drawings work best. The picture becomes a one-colour shape that prints white, like the letters · โลโก้หรือภาพขาวดำจะได้ผลดีที่สุด</div>
+    </div>
+
+    <div style="margin-top:18px">
+      <label class="h">Letters / ตัวอักษร (tap to add)</label>
+      <div class="tabs" id="tabs"></div>
+      <div class="keys" id="keys"></div>
+      <div class="tools">
+        <button id="sp">Space ␣</button><button id="nl">New line ↵</button><button id="bs">⌫ Delete</button><button id="clr">Clear</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="preview">
+    <div class="stage"><svg id="svg" viewBox="-38 -18 76 36" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div class="stats" id="stats"></div>
+    <div class="card dl">
+      <button class="btn" id="dlBtn" disabled>Loading…</button>
+      <div id="msg">The file downloads as a .zip. Unzip it to get the .3mf for Bambu Studio, PrusaSlicer, OrcaSlicer or Cura.</div>
+    </div>
+    <details class="card">
+      <summary>How to print · วิธีพิมพ์</summary>
+      Print face up with no supports. A 0.4 mm nozzle works; 0.12 mm layers give the sharpest letters.
+      <table>
+        <tr><td><span class="sw" style="background:#f2f2ee"></span>0 – 2.8 mm</td><td>White base</td></tr>
+        <tr><td><span class="sw" style="background:#7D0D1E"></span>2.8 – 3.4 mm</td><td>Burgundy panel</td></tr>
+        <tr><td><span class="sw" style="background:#fff"></span>3.4 – 4.0 mm</td><td>White raised letters and border</td></tr>
+      </table>
+      <b>One-colour printer:</b> add a filament change at 2.8 mm (burgundy) and at 3.4 mm (back to white).<br>
+      <b>AMS / multi-colour:</b> each tag has 3 parts already named by colour; set them to white / burgundy.<br>
+      Key-ring hole 5.5 mm fits a standard 25 mm split ring.
+    </details>
+  </section>
+</main>
+
+<script src="lib/clipper.js"></script>
+<script src="lib/earcut.min.js"></script>
+<script src="lib/jszip.min.js"></script>
+<script src="lib/assets.js"></script>
+<script>
+// ---------------- character palette ----------------
+const SETS = {
+  'ก–ฮ': 'กขฃคฅฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผฝพฟภมยรลวศษสหฬอฮ',
+  'สระ / วรรณยุกต์': ['ะ','า','ำ','ิ','ี','ึ','ื','ุ','ู','เ','แ','โ','ใ','ไ','ั','็','่','้','๊','๋','์','ๆ','ฯ','ฤ','ฦ'],
+  '๐–๙': '๐๑๒๓๔๕๖๗๘๙',
+  'A–Z': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  'a–z': 'abcdefghijklmnopqrstuvwxyz',
+  '0–9 . -': '0123456789.-&\'#/+',
+};
+const COMBINING = new Set(['ั','ิ','ี','ึ','ื','ุ','ู','็','่','้','๊','๋','์','ํ','ำ']);
+const tabsEl = document.getElementById('tabs'), keysEl = document.getElementById('keys'), txt = document.getElementById('txt');
+let curTab = 'ก–ฮ';
+function insert(s){
+  const a = txt.selectionStart ?? txt.value.length, b = txt.selectionEnd ?? txt.value.length;
+  txt.value = txt.value.slice(0, a) + s + txt.value.slice(b);
+  const p = a + s.length; txt.focus(); txt.setSelectionRange(p, p); schedule();
+}
+function renderKeys(){
+  tabsEl.innerHTML = ''; keysEl.innerHTML = '';
+  Object.keys(SETS).forEach(k => {
+    const b = document.createElement('button'); b.textContent = k; if (k === curTab) b.className = 'on';
+    b.onclick = () => { curTab = k; renderKeys(); }; tabsEl.appendChild(b);
+  });
+  [...SETS[curTab]].forEach(ch => {
+    const b = document.createElement('button');
+    b.textContent = COMBINING.has(ch) ? '◌' + ch : ch;
+    b.title = ch; b.onclick = () => insert(ch); keysEl.appendChild(b);
+  });
+}
+renderKeys();
+document.getElementById('sp').onclick = () => insert(' ');
+document.getElementById('nl').onclick = () => insert('\n');
+document.getElementById('bs').onclick = () => {
+  const a = txt.selectionStart, b = txt.selectionEnd;
+  if (a !== b) { txt.value = txt.value.slice(0, a) + txt.value.slice(b); txt.setSelectionRange(a, a); }
+  else if (a > 0) { const chars = [...txt.value.slice(0, a)]; chars.pop(); const head = chars.join(''); txt.value = head + txt.value.slice(a); txt.setSelectionRange(head.length, head.length); }
+  txt.focus(); schedule();
+};
+document.getElementById('clr').onclick = () => { txt.value = ''; txt.focus(); schedule(); };
+
+// ---------------- controls ----------------
+const $ = id => document.getElementById(id);
+function segVal(id){ return +$(id).querySelector('.on').dataset.v; }
+['border','count','picPos','picInv'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
+  $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); schedule();
+}));
+[['picSize','picSizeO',v=>v+'%'],['picThr','picThrO',v=>v],['size','sizeO',v=>v+'%'],['margin','marginO',v=>v+' mm'],['bold','boldO',v=>'+'+(+v).toFixed(2)]].forEach(([i,o,f]) => {
+  $(i).oninput = () => { $(o).textContent = f($(i).value); schedule(); };
+});
+$('font').onchange = schedule; txt.oninput = schedule;
+
+// ---------------- geometry helpers ----------------
+const SC = 1000;                 // clipper integer units per mm
+const C = ClipperLib;
+const D = window.TAG_DATA;
+const toPath = pts => pts.map(([x, y]) => ({X: Math.round(x * SC), Y: Math.round(y * SC)}));
+const PANEL = [toPath(D.panel)];
+const BORDER = [toPath(D.border_outer), toPath(D.border_inner).reverse()];
+
+function clip(subj, clipP, type, fillS = C.PolyFillType.pftNonZero, fillC = C.PolyFillType.pftNonZero){
+  const c = new C.Clipper(); c.AddPaths(subj, C.PolyType.ptSubject, true);
+  if (clipP) c.AddPaths(clipP, C.PolyType.ptClip, true);
+  const out = new C.Paths(); c.Execute(type, out, fillS, fillC); return out;
+}
+function clipTree(subj, clipP, type){
+  const c = new C.Clipper(); c.AddPaths(subj, C.PolyType.ptSubject, true);
+  if (clipP) c.AddPaths(clipP, C.PolyType.ptClip, true);
+  const t = new C.PolyTree(); c.Execute(type, t, C.PolyFillType.pftNonZero, C.PolyFillType.pftNonZero);
+  return C.JS.PolyTreeToExPolygons(t);
+}
+
+// parse an SVG path (M L Q C Z, absolute) into flattened rings
+function pathToRings(d){
+  const toks = d.match(/[MLQCZmlqcz]|-?\d*\.?\d+(?:e[-+]?\d+)?/g) || [];
+  const rings = []; let cur = null, i = 0, cmd = null, x = 0, y = 0;
+  const num = () => parseFloat(toks[i++]);
+  while (i < toks.length) {
+    if (/[A-Za-z]/.test(toks[i])) cmd = toks[i++];
+    if (cmd === 'M') { x = num(); y = num(); cur = [[x, y]]; rings.push(cur); cmd = 'L'; }
+    else if (cmd === 'L') { x = num(); y = num(); cur.push([x, y]); }
+    else if (cmd === 'Q') { const x1 = num(), y1 = num(), x2 = num(), y2 = num();
+      for (let k = 1; k <= 8; k++) { const t = k / 8, m = 1 - t; cur.push([m*m*x + 2*m*t*x1 + t*t*x2, m*m*y + 2*m*t*y1 + t*t*y2]); } x = x2; y = y2; }
+    else if (cmd === 'C') { const x1 = num(), y1 = num(), x2 = num(), y2 = num(), x3 = num(), y3 = num();
+      for (let k = 1; k <= 10; k++) { const t = k / 10, m = 1 - t; cur.push([m*m*m*x + 3*m*m*t*x1 + 3*m*t*t*x2 + t*t*t*x3, m*m*m*y + 3*m*m*t*y1 + 3*m*t*t*y2 + t*t*t*y3]); } x = x3; y = y3; }
+    else if (cmd === 'Z' || cmd === 'z') { cmd = null; }
+    else { i++; }
+  }
+  return rings.filter(r => r.length >= 3);
+}
+
+// ---------------- picture → shape ----------------
+let PIC = null;              // { img, hasAlpha }
+let TRACE = null, TRACE_KEY = '';
+const PK = 100;              // integer units per picture pixel
+$('pic').onchange = e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const url = URL.createObjectURL(f), im = new Image();
+  im.onload = () => {
+    URL.revokeObjectURL(url);
+    PIC = { img: im, hasAlpha: detectAlpha(im) }; TRACE = null; TRACE_KEY = '';
+    $('picOpts').hidden = false; $('picClr').hidden = false; $('picPrev').hidden = false;
+    $('picThr').disabled = PIC.hasAlpha;
+    $('picHint').textContent = PIC.hasAlpha
+      ? 'This picture has a transparent background, so its solid parts become the raised shape. Use Invert to swap.'
+      : 'Dark parts become the raised white shape. Move “Light / dark cut” until the preview square looks right.';
+    schedule();
+  };
+  im.onerror = () => { URL.revokeObjectURL(url); $('picHint').textContent = 'Could not open that picture. Try a PNG or JPG.'; };
+  im.src = url; e.target.value = '';
+};
+$('picClr').onclick = () => {
+  PIC = null; TRACE = null; TRACE_KEY = '';
+  $('picOpts').hidden = true; $('picClr').hidden = true; $('picPrev').hidden = true;
+  $('picHint').textContent = 'Logos, icons and black-on-white drawings work best. The picture becomes a one-colour shape that prints white, like the letters · โลโก้หรือภาพขาวดำจะได้ผลดีที่สุด';
+  schedule();
+};
+function detectAlpha(im){
+  const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+  const x = c.getContext('2d'); x.drawImage(im, 0, 0, 64, 64);
+  const d = x.getImageData(0, 0, 64, 64).data; let t = 0;
+  for (let i = 3; i < d.length; i += 4) if (d[i] < 128) t++;
+  return t > 64 * 64 * 0.02;
+}
+// threshold the picture into a bitmap, crop it, and turn it into polygons (picture-pixel units × PK, y down)
+function tracePic(){
+  if (!PIC) return null;
+  const thr = +$('picThr').value, inv = segVal('picInv') === 1;
+  const key = thr + '|' + inv;
+  if (TRACE && TRACE_KEY === key) return TRACE;
+  const N = 240, im = PIC.img, k = N / Math.max(im.naturalWidth, im.naturalHeight);
+  const w = Math.max(1, Math.round(im.naturalWidth * k)), h = Math.max(1, Math.round(im.naturalHeight * k));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const cx = c.getContext('2d'); cx.drawImage(im, 0, 0, w, h);
+  const d = cx.getImageData(0, 0, w, h).data, on = new Uint8Array(w * h);
+  let bx0 = w, by0 = h, bx1 = -1, by1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4, a = d[i + 3] / 255;
+    let v;
+    if (PIC.hasAlpha) v = a >= 0.5;
+    else { const lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) * a + 255 * (1 - a); v = lum < thr; }
+    if (inv) v = !v;
+    if (v) { on[y * w + x] = 1; if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; }
+  }
+  // preview square
+  const pv = $('picPrev'), px = pv.getContext('2d');
+  px.fillStyle = '#fff'; px.fillRect(0, 0, 96, 96);
+  if (bx1 >= 0) {
+    const cw = bx1 - bx0 + 1, ch = by1 - by0 + 1, s = 92 / Math.max(cw, ch);
+    const id = px.createImageData(cw, ch);
+    for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+      const o = (y * cw + x) * 4, v = on[(y + by0) * w + x + bx0] ? 40 : 255;
+      id.data[o] = id.data[o + 1] = id.data[o + 2] = v; id.data[o + 3] = 255;
+    }
+    const tmp = document.createElement('canvas'); tmp.width = cw; tmp.height = ch; tmp.getContext('2d').putImageData(id, 0, 0);
+    px.imageSmoothingEnabled = false;
+    px.drawImage(tmp, (96 - cw * s) / 2, (96 - ch * s) / 2, cw * s, ch * s);
+  }
+  if (bx1 < 0) { TRACE = { paths: [], W: 0, H: 0 }; TRACE_KEY = key; return TRACE; }
+  // horizontal runs → rectangles → union
+  const rects = [];
+  for (let y = by0; y <= by1; y++) {
+    let x = bx0;
+    while (x <= bx1) {
+      if (!on[y * w + x]) { x++; continue; }
+      const s0 = x; while (x <= bx1 && on[y * w + x]) x++;
+      const X0 = (s0 - bx0) * PK, X1 = (x - bx0) * PK, Y0 = (y - by0) * PK, Y1 = (y - by0 + 1) * PK;
+      rects.push([{X: X0, Y: Y0}, {X: X1, Y: Y0}, {X: X1, Y: Y1}, {X: X0, Y: Y1}]);
+    }
+  }
+  let paths = clip(rects, null, C.ClipType.ctUnion);
+  paths = C.JS.Lighten(paths, 0.75 * PK).filter(p => p.length >= 3);   // smooth the pixel stairs
+  paths = clip(paths, null, C.ClipType.ctUnion);
+  TRACE = { paths, W: bx1 - bx0 + 1, H: by1 - by0 + 1 }; TRACE_KEY = key;
+  return TRACE;
+}
+// place the traced picture into a box (mm), keeping its shape; returns clipper paths in SC units
+function placePic(tr, x0, yTop, ps){
+  let out = tr.paths.map(p => p.map(q => ({ X: Math.round((x0 + q.X / PK * ps) * SC), Y: Math.round((yTop - q.Y / PK * ps) * SC) })));
+  out = clip(out, null, C.ClipType.ctUnion);
+  const minA = 0.2 * SC * SC;   // drop specks smaller than 0.2 mm² (too small to print)
+  return out.filter(p => Math.abs(C.Clipper.Area(p)) >= minA);
+}
+
+// ---------------- HarfBuzz ----------------
+const b64ToBytes = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+let HB = null; const FONTS = {};
+async function initHB(){
+  globalThis.__HB_OPTS = { wasmBinary: b64ToBytes(window.HB_WASM_B64) };
+  HB = await import('./lib/hb.js');
+  for (const [k, v] of Object.entries(window.FONTS_B64)) {
+    const bytes = b64ToBytes(v);
+    const blob = new HB.Blob(bytes.buffer); const face = new HB.Face(blob); const font = new HB.Font(face);
+    FONTS[k] = { font, upem: face.upem || 1000 };
+  }
+}
+
+// shape one line -> {rings in font units, missing}
+function shapeLine(fontKey, text){
+  const { font } = FONTS[fontKey];
+  const buf = new HB.Buffer(); buf.addText(text); buf.guessSegmentProperties();
+  HB.shape(font, buf);
+  const infos = buf.getGlyphInfos(), pos = buf.getGlyphPositions();
+  let x = 0, missing = 0; const glyphs = [];
+  infos.forEach((g, i) => {
+    const gid = g.codepoint, p = pos[i];
+    if (gid === 0) missing++;
+    const rings = pathToRings(font.glyphToPath(gid)).map(r => r.map(([a, b]) => [a + x + (p.xOffset || 0), b + (p.yOffset || 0)]));
+    if (rings.length) glyphs.push(rings);
+    x += p.xAdvance;
+  });
+  return { glyphs, missing };
+}
+
+// ---------------- build the design ----------------
+let LAST = null;
+function build(){
+  const fontKey = $('font').value;
+  const lines = txt.value.split('\n').map(s => s.replace(/\s+$/, '')).filter((s, i, a) => s.length || i < a.length - 1).filter(s => s.length);
+  const sizePct = +$('size').value / 100, margin = +$('margin').value, bold = +$('bold').value;
+  const withBorder = segVal('border') === 1;
+
+  const inner = withBorder ? D.border_inner : D.panel;
+  const xs = inner.map(p => p[0]), ys = inner.map(p => p[1]);
+  const box = { x0: Math.min(...xs) + margin, x1: Math.max(...xs) - margin, y0: Math.min(...ys) + 1.8, y1: Math.max(...ys) - 1.8 };
+
+  // picture: takes a slot at the left or right, or the whole panel
+  let picPaths = [], picW = 0, picH = 0;
+  const tr = tracePic();
+  if (tr && tr.paths.length) {
+    const pos = segVal('picPos');
+    if (pos === 2) lines.length = 0;
+    const alone = !lines.length, GAP = 2;
+    const bw = box.x1 - box.x0, bh = box.y1 - box.y0;
+    picH = bh * (+$('picSize').value / 100); picW = picH * tr.W / tr.H;
+    const maxW = alone ? bw : bw * 0.55;
+    if (picW > maxW) { picW = maxW; picH = picW * tr.H / tr.W; }
+    const ps = picW / tr.W, yTop = (box.y0 + box.y1) / 2 + picH / 2;
+    let px0;
+    if (alone) px0 = (box.x0 + box.x1) / 2 - picW / 2;
+    else if (pos === 1) { px0 = box.x1 - picW; box.x1 = px0 - GAP; }
+    else { px0 = box.x0; box.x0 = px0 + picW + GAP; }
+    picPaths = placePic(tr, px0, yTop, ps);
+  }
+
+  let missing = 0; const shaped = [];
+  for (const l of lines) { const r = shapeLine(fontKey, l); missing += r.missing; shaped.push(r); }
+
+  // font-unit bounds per line
+  const upem = FONTS[fontKey].upem;
+  const lineB = shaped.map(s => {
+    let a = [1e9, 1e9, -1e9, -1e9];
+    s.glyphs.forEach(g => g.forEach(r => r.forEach(([x, y]) => { a[0] = Math.min(a[0], x); a[1] = Math.min(a[1], y); a[2] = Math.max(a[2], x); a[3] = Math.max(a[3], y); })));
+    return a;
+  });
+  const gap = 0.14 * upem;
+  // stack lines (ink based): line 0 on top
+  const offs = []; let yCursor = 0;
+  lineB.forEach((b, i) => { if (i === 0) { offs.push(-b[3]); yCursor = b[1] - b[3]; } else { offs.push(yCursor - gap - b[3]); yCursor = yCursor - gap - (b[3] - b[1]); } });
+  const blockW = Math.max(1, ...lineB.map(b => b[2] - b[0])), blockH = Math.max(1, -yCursor);
+  let s = Math.min((box.x1 - box.x0) / blockW, (box.y1 - box.y0) / blockH) * sizePct;
+  const cx = (box.x0 + box.x1) / 2, cy = (box.y0 + box.y1) / 2;
+
+  // text polygons
+  let textPaths = [];
+  shaped.forEach((sh, li) => {
+    const b = lineB[li], lw = b[2] - b[0];
+    const dx = cx - (b[0] + lw / 2) * s, dy = cy + (blockH / 2) * s + offs[li] * s;
+    sh.glyphs.forEach(g => {
+      const paths = g.map(r => r.map(([x, y]) => ({ X: Math.round((x * s + dx) * SC), Y: Math.round((y * s + dy) * SC) })));
+      const u = clip(paths, null, C.ClipType.ctUnion, C.PolyFillType.pftEvenOdd);
+      textPaths = textPaths.concat(u);
+    });
+  });
+  textPaths = clip(textPaths, null, C.ClipType.ctUnion);
+  if (bold > 0 && textPaths.length) {
+    const co = new C.ClipperOffset(2, 0.05 * SC); co.AddPaths(textPaths, C.JoinType.jtRound, C.EndType.etClosedPolygon);
+    const out = new C.Paths(); co.Execute(out, bold * SC); textPaths = out;
+  }
+  const artSrc = (withBorder ? textPaths.concat(BORDER) : textPaths).concat(picPaths);
+  const artU = clip(artSrc, null, C.ClipType.ctUnion);
+  const artEx = artU.length ? clipTree(artU, PANEL, C.ClipType.ctIntersection) : [];
+  const artPaths = artU.length ? clip(artU, PANEL, C.ClipType.ctIntersection) : [];
+  const burgEx = clipTree(PANEL, artPaths, C.ClipType.ctDifference);
+
+  // text ink size in mm
+  let tb = [1e9, 1e9, -1e9, -1e9];
+  textPaths.forEach(p => p.forEach(q => { tb[0] = Math.min(tb[0], q.X); tb[1] = Math.min(tb[1], q.Y); tb[2] = Math.max(tb[2], q.X); tb[3] = Math.max(tb[3], q.Y); }));
+  const textH = textPaths.length ? (tb[3] - tb[1]) / SC : 0, textW = textPaths.length ? (tb[2] - tb[0]) / SC : 0;
+  const lineH = lines.length ? textH / lines.length : 0;
+
+  LAST = { artEx, burgEx, lines, missing, textH, textW, lineH, fontKey, hasPic: picPaths.length > 0, picW, picH,
+           picEmpty: !!(tr && !tr.paths.length) || !!(tr && tr.paths.length && !picPaths.length) };
+  draw(); stats();
+}
+
+function exToSvg(ex){
+  let d = '';
+  ex.forEach(e => [e.outer, ...e.holes].forEach(r => { d += 'M' + r.map(p => (p.X / SC).toFixed(3) + ' ' + (p.Y / SC).toFixed(3)).join('L') + 'Z'; }));
+  return d;
+}
+function ringSvg(pts){ return 'M' + pts.map(p => p[0].toFixed(3) + ' ' + p[1].toFixed(3)).join('L') + 'Z'; }
+function draw(){
+  const svg = $('svg');
+  svg.innerHTML = '';
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.setAttribute('transform', 'scale(1,-1)');
+  const P = (d, fill, extra = {}) => { const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d); p.setAttribute('fill', fill); p.setAttribute('fill-rule', 'evenodd'); for (const k in extra) p.setAttribute(k, extra[k]); g.appendChild(p); };
+  P(ringSvg(D.outline[0]) + ringSvg(D.hole), '#fbfbf8', { stroke: '#d9d0c8', 'stroke-width': 0.25 });
+  P(exToSvg(LAST.burgEx), '#7D0D1E');
+  P(exToSvg(LAST.artEx), '#ffffff');
+  svg.appendChild(g);
+}
+function stats(){
+  const el = $('stats'); el.innerHTML = '';
+  const add = (html, cls) => { const d = document.createElement('div'); d.className = 'stat' + (cls ? ' ' + cls : ''); d.innerHTML = html; el.appendChild(d); };
+  if (LAST.picEmpty) add('The picture came out empty — move “Light / dark cut” or try Invert', 'warn');
+  if (!LAST.lines.length && !LAST.hasPic) { add('Type a word or add a picture to start'); return; }
+  if (LAST.hasPic) add(`Picture <b>${LAST.picW.toFixed(1)} × ${LAST.picH.toFixed(1)} mm</b>`);
+  if (LAST.lines.length) {
+    add(`Text <b>${LAST.textW.toFixed(1)} × ${LAST.textH.toFixed(1)} mm</b>`);
+    add(`${LAST.lines.length} line${LAST.lines.length > 1 ? 's' : ''} · about <b>${LAST.lineH.toFixed(1)} mm</b> per line`);
+  }
+  if (LAST.missing) add(`${LAST.missing} letter(s) are not in this font — choose Sarabun for Thai`, 'warn');
+  if (LAST.lineH && LAST.lineH < 4) add('Small letters (&lt; 4 mm): print with 0.12 mm layers, or use 2 lines', 'warn');
+}
+
+let timer = null;
+function schedule(){ clearTimeout(timer); timer = setTimeout(() => { if (HB) build(); }, 60); }
+
+// ---------------- mesh + 3MF ----------------
+function prism(exList, z0, z1){
+  const V = [], T = [];
+  exList.forEach(e => {
+    let rings = [e.outer, ...e.holes].map(r => C.Clipper.CleanPolygon(r, 1.5)).filter(r => r.length >= 3);
+    if (!rings.length) return;
+    const area = r => { let a = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += (r[j].X + r[i].X) * (r[j].Y - r[i].Y); return -a / 2; };
+    rings = rings.map((r, k) => { const a = area(r); return (k === 0 ? a < 0 : a > 0) ? r.slice().reverse() : r; });
+    if (area(rings[0]) <= 0) return;
+    const flat = [], holes = []; let n = 0;
+    rings.forEach((r, k) => { if (k) holes.push(n); r.forEach(p => { flat.push(p.X / SC, p.Y / SC); n++; }); });
+    const base = V.length / 3;
+    for (let i = 0; i < n; i++) V.push(flat[2 * i], flat[2 * i + 1], z0);
+    for (let i = 0; i < n; i++) V.push(flat[2 * i], flat[2 * i + 1], z1);
+    const tri = earcut(flat, holes, 2);
+    for (let i = 0; i < tri.length; i += 3) {
+      let [a, b, c] = [tri[i], tri[i + 1], tri[i + 2]];
+      const cr = (flat[2*b] - flat[2*a]) * (flat[2*c+1] - flat[2*a+1]) - (flat[2*b+1] - flat[2*a+1]) * (flat[2*c] - flat[2*a]);
+      if (cr < 0) [b, c] = [c, b];
+      T.push(base + n + a, base + n + b, base + n + c);   // top (ccw)
+      T.push(base + a, base + c, base + b);               // bottom
+    }
+    let start = 0;
+    rings.forEach(r => {
+      const m = r.length;
+      for (let i = 0; i < m; i++) {
+        const a = start + i, b = start + (i + 1) % m;
+        T.push(base + a, base + b, base + n + b);
+        T.push(base + a, base + n + b, base + n + a);
+      }
+      start += m;
+    });
+  });
+  return { V, T };
+}
+
+function meshXml(id, name, pindex, V, T){
+  const vs = []; for (let i = 0; i < V.length; i += 3) vs.push(`<vertex x="${V[i].toFixed(4)}" y="${V[i+1].toFixed(4)}" z="${V[i+2].toFixed(4)}"/>`);
+  const ts = []; for (let i = 0; i < T.length; i += 3) ts.push(`<triangle v1="${T[i]}" v2="${T[i+1]}" v3="${T[i+2]}"/>`);
+  return `<object id="${id}" name="${name}" type="model" pid="1" pindex="${pindex}"><mesh><vertices>${vs.join('')}</vertices><triangles>${ts.join('')}</triangles></mesh></object>`;
+}
+const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+
+async function make3mf(){
+  const Z = D.z;
+  const burg = prism(LAST.burgEx, Z.base, Z.burg);
+  const art = prism(LAST.artEx, Z.base, Z.top);
+  const count = segVal('count');
+  const word = LAST.lines.join(' ') || 'Picture';
+  let objs = '';
+  objs += meshXml(2, 'Tag base (white)', 0, D.base.v, D.base.f);
+  objs += meshXml(3, 'Panel (burgundy)', 1, burg.V, burg.T);
+  objs += meshXml(4, 'Lettering (white)', 0, art.V, art.T);
+  const pos = count === 1 ? [[0, 0]] : count === 4 ? [[-39, -18], [39, -18], [-39, 18], [39, 18]]
+            : [0, 1, 2, 3, 4, 5, 6, 7].map(i => [(i % 2) * 78 - 39, Math.floor(i / 2) * 36 - 54]);
+  let build = '', id = 5;
+  pos.forEach(([x, y], i) => {
+    const tr = `1 0 0 0 1 0 0 0 1 ${x} ${y} 0`;
+    objs += `<object id="${id}" name="${esc(word)} key tag${count > 1 ? ' ' + (i + 1) : ''}" type="model"><components>` +
+      `<component objectid="2" transform="${tr}"/><component objectid="3" transform="${tr}"/><component objectid="4" transform="${tr}"/></components></object>`;
+    build += `<item objectid="${id}"/>`; id++;
+  });
+  const model = `<?xml version="1.0" encoding="UTF-8"?>\n<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">` +
+    `<metadata name="Title">${esc(word)} key tag</metadata><resources><basematerials id="1">` +
+    `<base name="White PLA" displaycolor="#F2F2EEFF"/><base name="Burgundy PLA" displaycolor="#7D0D1EFF"/></basematerials>` +
+    objs + `</resources><build>${build}</build></model>`;
+  const z = new JSZip();
+  z.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>');
+  z.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>');
+  z.file('3D/3dmodel.model', model);
+  return await z.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+}
+function safeName(){
+  let n = LAST.lines.join(' ').replace(/[\\/:*?"<>|\n\r\t]/g, '').replace(/\s+/g, '_').slice(0, 40) || 'keytag';
+  return 'KeyTag_' + n + (segVal('count') > 1 ? '_x' + segVal('count') : '');
+}
+window.__make3mf = make3mf; window.__safeName = safeName;   // for testing
+
+// ---------------- download ----------------
+let downloads = null;
+async function onDownload(){
+  if (!LAST || (!LAST.lines.length && !LAST.hasPic)) return;
+  const btn = $('dlBtn'), msg = $('msg');
+  btn.disabled = true; btn.textContent = 'Building…';
+  try {
+    const name = safeName();
+    const inner = await make3mf();
+    const outer = new JSZip();
+    outer.file(name + '.3mf', inner);
+    outer.file('HOW_TO_PRINT.txt', 'Print face up, no supports.\r\n0-2.8 mm white base | 2.8-3.4 mm burgundy | 3.4-4.0 mm white letters.\r\nSingle-colour printer: filament change at 2.8 mm (burgundy) and 3.4 mm (white).\r\nMulti-colour: set parts to white / burgundy.\r\n');
+    const blob = await outer.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    if (downloads) await downloads.save({ filename: name + '.zip', data: blob });
+    else {   // plain web page (e.g. GitHub Pages): normal browser download
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name + '.zip';
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }
+    msg.textContent = 'Saved. Unzip it and open the .3mf in your slicer.';
+  } catch (e) {
+    const code = e && e.code;
+    msg.textContent = code === 'declined' ? 'Download cancelled.' : code === 'rate_limited' ? 'A download prompt is already open. Try again in a moment.'
+      : code === 'host_unavailable' ? 'This app cannot save files. Open the page in a web browser or on a computer.' : 'Could not save the file (' + (code || e.message || e) + ').';
+  } finally { btn.disabled = false; btn.textContent = 'Download 3MF (.zip)'; }
+}
+$('dlBtn').onclick = onDownload;
+
+(async () => {
+  try { await initHB(); build(); $('dlBtn').disabled = false; $('dlBtn').textContent = 'Download 3MF (.zip)'; }
+  catch (e) { $('msg').textContent = 'Could not start the text engine: ' + (e.message || e); console.error(e); }
+  try {
+    if (window.claude && window.claude.use) {
+      downloads = await window.claude.use('downloads');
+    }
+  } catch (e) { downloads = null; }
+})();
+</script>
+</body>
+</html>
