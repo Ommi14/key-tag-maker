@@ -142,7 +142,7 @@
       </table>
       <b>One-colour printer:</b> add a filament change at <span id="singleBaseLabel">2.8</span> mm (burgundy) and at <span id="singleBurgLabel">3.4</span> mm (back to white).<br>
       <b>AMS / two-colour:</b> the base and raised lettering use one colour; the panel uses the second colour.<br>
-      <b>Hole:</b> 5 mm rounded-square cutout, inset 5.6 mm from the top-left, with a 0.6 mm raised white border.
+      <b>Hole:</b> 5 mm circular cutout, inset 0.6 mm from the top-left, with a 0.6 mm raised white border.
     </details>
   </section>
 </main>
@@ -382,9 +382,13 @@ function roundedRectPoints(x0, y0, w, h, r){
   });
   return pts;
 }
-function roundedHolePoints(cx, cy, size){
-  const r = 0.8;
-  return roundedRectPoints(cx - size / 2, cy - size / 2, size, size, r);
+function circlePoints(cx, cy, radius){
+  const pts = [];
+  for (let i = 0; i < 48; i++) {
+    const a = i * Math.PI * 2 / 48;
+    pts.push([cx + radius * Math.cos(a), cy + radius * Math.sin(a)]);
+  }
+  return pts;
 }
 function build(){
   const fontKey = $('font').value;
@@ -410,11 +414,11 @@ function build(){
   const borderInner = roundedRectPoints(-keyLength / 2 + 3.1, -keyWidth / 2 + 3.1,
     keyLength - 6.2, keyWidth - 6.2, 0.9);
   const inner = withBorder ? borderInner : panel;
-  const holeSize = 5;
-  const holeInset = 5.6;
-  const holeCx = -keyLength / 2 + holeInset + holeSize / 2;
-  const holeCy = keyWidth / 2 - holeInset - holeSize / 2;
-  const hole = roundedHolePoints(holeCx, holeCy, holeSize);
+  const holeDiameter = 5;
+  const holeInset = 0.6;
+  const holeCx = -keyLength / 2 + holeInset + holeDiameter / 2;
+  const holeCy = keyWidth / 2 - holeInset - holeDiameter / 2;
+  const hole = circlePoints(holeCx, holeCy, holeDiameter / 2);
   const PANEL = [toPath(panel), toPath(hole).reverse()];
   const BORDER = [toPath(borderOuter), toPath(borderInner).reverse()];
   const baseEx = [{ outer: toPath(outer), holes: [toPath(hole).reverse()] }];
@@ -502,9 +506,9 @@ function exToSvg(ex){
 }
 function ringSvg(pts, sx = 1, sy = 1){ return 'M' + pts.map(p => (p[0] * sx).toFixed(3) + ' ' + (p[1] * sy).toFixed(3)).join('L') + 'Z'; }
 function movedHoleSvg(){
-  const holeCx = -LAST.keyLength / 2 + 8.1;
-  const holeCy = LAST.keyWidth / 2 - 8.1;
-  return ringSvg(roundedHolePoints(holeCx, holeCy, 5));
+  const holeCx = -LAST.keyLength / 2 + 3.1;
+  const holeCy = LAST.keyWidth / 2 - 3.1;
+  return ringSvg(circlePoints(holeCx, holeCy, 2.5));
 }
 function draw(){
   const svg = $('svg');
@@ -645,7 +649,7 @@ async function onDownload(){
     const outer = new JSZip();
     outer.file(name + '.3mf', inner);
     const t = LAST.keyThickness, zBase = LAST.letterThickness * 0.7, zBurg = LAST.letterThickness * 0.875, zTop = LAST.letterThickness;
-    outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm. Letter height: ${LAST.letterThickness.toFixed(1)} mm.\r\n0-${zBase.toFixed(2)} mm base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm panel | ${zBurg.toFixed(2)}-${zTop.toFixed(2)} mm raised lettering and border.\r\nHole: 5 mm rounded square, inset 5.6 mm from the top-left, with a 0.6 mm raised border.\r\nTwo-colour printer: use the base/raised colour for the base and raised parts, and the panel colour for the panel.\r\n`);
+    outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm. Letter height: ${LAST.letterThickness.toFixed(1)} mm.\r\n0-${zBase.toFixed(2)} mm base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm panel | ${zBurg.toFixed(2)}-${zTop.toFixed(2)} mm raised lettering and border.\r\nHole: 5 mm circular hole, inset 0.6 mm from the top-left, with a 0.6 mm raised border.\r\nTwo-colour printer: use the base/raised colour for the base and raised parts, and the panel colour for the panel.\r\n`);
     const blob = await outer.generateAsync({ type: 'blob', compression: 'DEFLATE' });
     if (downloads) await downloads.save({ filename: name + '.zip', data: blob });
     else {   // plain web page (e.g. GitHub Pages): normal browser download
