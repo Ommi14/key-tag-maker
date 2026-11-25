@@ -13,6 +13,7 @@ A browser tool that turns a word (Thai or English) and an optional picture into 
 - **Picture:** add a PNG or JPG (a logo, icon or drawing). It is traced into a one-colour shape that prints white, like the letters. You can place it left or right of the text, or use it alone, and set its size, the light/dark cut-off and invert.
 - Border line on/off, letter thickness, side space
 - 1, 4 or 8 tags per file
+- Adjustable key length (40–100 mm), width (20–50 mm) and thickness (3–6 mm)
 
 ## Printing
 

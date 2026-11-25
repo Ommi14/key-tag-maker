@@ -67,7 +67,7 @@
 <body>
 <header>
   <h1>Key Tag Maker</h1>
-  <p>พิมพ์คำใหม่ → ดูตัวอย่าง → ดาวน์โหลดไฟล์ 3MF · Type a word, preview it, download a 3MF · 70 × 30 × 4 mm</p>
+  <p>พิมพ์คำใหม่ → ดูตัวอย่าง → ดาวน์โหลดไฟล์ 3MF · Type a word, preview it, download a 3MF · Adjustable key size</p>
 </header>
 <main>
   <section class="card">
@@ -88,6 +88,9 @@
         <option value="mssans">Microsoft Sans Serif — English / Latin</option>
       </select>
     </div>
+    <div class="row"><span>Key length</span><input id="keyLength" type="range" min="40" max="100" step="1" value="70"><output id="keyLengthO">70 mm</output></div>
+    <div class="row"><span>Key width</span><input id="keyWidth" type="range" min="20" max="50" step="1" value="30"><output id="keyWidthO">30 mm</output></div>
+    <div class="row"><span>Key thickness</span><input id="keyThickness" type="range" min="3" max="6" step="0.5" value="4"><output id="keyThicknessO">4 mm</output></div>
     <div class="row"><span>Text size</span><input id="size" type="range" min="40" max="100" value="100"><output id="sizeO">100%</output></div>
     <div class="row"><span>Side space</span><input id="margin" type="range" min="1" max="10" step="0.5" value="4"><output id="marginO">4 mm</output></div>
     <div class="row"><span>Letter thickness</span><input id="bold" type="range" min="0" max="0.3" step="0.05" value="0.1"><output id="boldO">+0.10</output></div>
@@ -131,11 +134,11 @@
       <summary>How to print · วิธีพิมพ์</summary>
       Print face up with no supports. A 0.4 mm nozzle works; 0.12 mm layers give the sharpest letters.
       <table>
-        <tr><td><span class="sw" style="background:#f2f2ee"></span>0 – 2.8 mm</td><td>White base</td></tr>
-        <tr><td><span class="sw" style="background:#7D0D1E"></span>2.8 – 3.4 mm</td><td>Burgundy panel</td></tr>
-        <tr><td><span class="sw" style="background:#fff"></span>3.4 – 4.0 mm</td><td>White raised letters and border</td></tr>
+        <tr><td><span class="sw" style="background:#f2f2ee"></span><span id="zBaseLabel">0 – 2.8 mm</span></td><td>White base</td></tr>
+        <tr><td><span class="sw" style="background:#7D0D1E"></span><span id="zBurgLabel">2.8 – 3.4 mm</span></td><td>Burgundy panel</td></tr>
+        <tr><td><span class="sw" style="background:#fff"></span><span id="zTopLabel">3.4 – 4.0 mm</span></td><td>White raised letters and border</td></tr>
       </table>
-      <b>One-colour printer:</b> add a filament change at 2.8 mm (burgundy) and at 3.4 mm (back to white).<br>
+      <b>One-colour printer:</b> add a filament change at <span id="singleBaseLabel">2.8</span> mm (burgundy) and at <span id="singleBurgLabel">3.4</span> mm (back to white).<br>
       <b>AMS / multi-colour:</b> each tag has 3 parts already named by colour; set them to white / burgundy.<br>
       Key-ring hole 5.5 mm fits a standard 25 mm split ring.
     </details>
@@ -193,7 +196,7 @@ function segVal(id){ return +$(id).querySelector('.on').dataset.v; }
 ['border','count','picPos','picInv'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
   $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); schedule();
 }));
-[['picSize','picSizeO',v=>v+'%'],['picThr','picThrO',v=>v],['size','sizeO',v=>v+'%'],['margin','marginO',v=>v+' mm'],['bold','boldO',v=>'+'+(+v).toFixed(2)]].forEach(([i,o,f]) => {
+[['picSize','picSizeO',v=>v+'%'],['picThr','picThrO',v=>v],['size','sizeO',v=>v+'%'],['margin','marginO',v=>v+' mm'],['bold','boldO',v=>'+'+(+v).toFixed(2)],['keyLength','keyLengthO',v=>v+' mm'],['keyWidth','keyWidthO',v=>v+' mm'],['keyThickness','keyThicknessO',v=>v+' mm']].forEach(([i,o,f]) => {
   $(i).oninput = () => { $(o).textContent = f($(i).value); schedule(); };
 });
 $('font').onchange = schedule; txt.oninput = schedule;
@@ -203,8 +206,6 @@ const SC = 1000;                 // clipper integer units per mm
 const C = ClipperLib;
 const D = window.TAG_DATA;
 const toPath = pts => pts.map(([x, y]) => ({X: Math.round(x * SC), Y: Math.round(y * SC)}));
-const PANEL = [toPath(D.panel)];
-const BORDER = [toPath(D.border_outer), toPath(D.border_inner).reverse()];
 
 function clip(subj, clipP, type, fillS = C.PolyFillType.pftNonZero, fillC = C.PolyFillType.pftNonZero){
   const c = new C.Clipper(); c.AddPaths(subj, C.PolyType.ptSubject, true);
@@ -367,8 +368,21 @@ function build(){
   const lines = txt.value.split('\n').map(s => s.replace(/\s+$/, '')).filter((s, i, a) => s.length || i < a.length - 1).filter(s => s.length);
   const sizePct = +$('size').value / 100, margin = +$('margin').value, bold = +$('bold').value;
   const withBorder = segVal('border') === 1;
-
-  const inner = withBorder ? D.border_inner : D.panel;
+  const keyLength = +$('keyLength').value, keyWidth = +$('keyWidth').value, keyThickness = +$('keyThickness').value;
+  const zBase = keyThickness * 0.7, zBurg = keyThickness * 0.85;
+  $('zBaseLabel').textContent = `0 – ${zBase.toFixed(2)} mm`;
+  $('zBurgLabel').textContent = `${zBase.toFixed(2)} – ${zBurg.toFixed(2)} mm`;
+  $('zTopLabel').textContent = `${zBurg.toFixed(2)} – ${keyThickness.toFixed(2)} mm`;
+  $('singleBaseLabel').textContent = zBase.toFixed(2);
+  $('singleBurgLabel').textContent = zBurg.toFixed(2);
+  const sx = keyLength / 70, sy = keyWidth / 30;
+  const scalePts = pts => pts.map(([x, y]) => [x * sx, y * sy]);
+  const panel = scalePts(D.panel);
+  const borderInner = scalePts(D.border_inner);
+  const borderOuter = scalePts(D.border_outer);
+  const inner = withBorder ? borderInner : panel;
+  const PANEL = [toPath(panel)];
+  const BORDER = [toPath(borderOuter), toPath(borderInner).reverse()];
   const xs = inner.map(p => p[0]), ys = inner.map(p => p[1]);
   const box = { x0: Math.min(...xs) + margin, x1: Math.max(...xs) - margin, y0: Math.min(...ys) + 1.8, y1: Math.max(...ys) - 1.8 };
 
@@ -437,7 +451,8 @@ function build(){
   const textH = textPaths.length ? (tb[3] - tb[1]) / SC : 0, textW = textPaths.length ? (tb[2] - tb[0]) / SC : 0;
   const lineH = lines.length ? textH / lines.length : 0;
 
-  LAST = { artEx, burgEx, lines, missing, textH, textW, lineH, fontKey, hasPic: picPaths.length > 0, picW, picH,
+  LAST = { artEx, burgEx, lines, missing, textH, textW, lineH, fontKey, keyLength, keyWidth, keyThickness, sx, sy,
+           hasPic: picPaths.length > 0, picW, picH,
            picEmpty: !!(tr && !tr.paths.length) || !!(tr && tr.paths.length && !picPaths.length) };
   draw(); stats();
 }
@@ -447,13 +462,14 @@ function exToSvg(ex){
   ex.forEach(e => [e.outer, ...e.holes].forEach(r => { d += 'M' + r.map(p => (p.X / SC).toFixed(3) + ' ' + (p.Y / SC).toFixed(3)).join('L') + 'Z'; }));
   return d;
 }
-function ringSvg(pts){ return 'M' + pts.map(p => p[0].toFixed(3) + ' ' + p[1].toFixed(3)).join('L') + 'Z'; }
+function ringSvg(pts, sx = 1, sy = 1){ return 'M' + pts.map(p => (p[0] * sx).toFixed(3) + ' ' + (p[1] * sy).toFixed(3)).join('L') + 'Z'; }
 function draw(){
   const svg = $('svg');
   svg.innerHTML = '';
+  svg.setAttribute('viewBox', `${-LAST.keyLength / 2 - 4} ${-LAST.keyWidth / 2 - 4} ${LAST.keyLength + 8} ${LAST.keyWidth + 8}`);
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.setAttribute('transform', 'scale(1,-1)');
   const P = (d, fill, extra = {}) => { const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d); p.setAttribute('fill', fill); p.setAttribute('fill-rule', 'evenodd'); for (const k in extra) p.setAttribute(k, extra[k]); g.appendChild(p); };
-  P(ringSvg(D.outline[0]) + ringSvg(D.hole), '#fbfbf8', { stroke: '#d9d0c8', 'stroke-width': 0.25 });
+  P(ringSvg(D.outline[0], LAST.sx, LAST.sy) + ringSvg(D.hole, LAST.sx, LAST.sy), '#fbfbf8', { stroke: '#d9d0c8', 'stroke-width': 0.25 });
   P(exToSvg(LAST.burgEx), '#7D0D1E');
   P(exToSvg(LAST.artEx), '#ffffff');
   svg.appendChild(g);
@@ -461,6 +477,7 @@ function draw(){
 function stats(){
   const el = $('stats'); el.innerHTML = '';
   const add = (html, cls) => { const d = document.createElement('div'); d.className = 'stat' + (cls ? ' ' + cls : ''); d.innerHTML = html; el.appendChild(d); };
+  add(`Key <b>${LAST.keyLength} × ${LAST.keyWidth} × ${LAST.keyThickness} mm</b>`);
   if (LAST.picEmpty) add('The picture came out empty — move “Light / dark cut” or try Invert', 'warn');
   if (!LAST.lines.length && !LAST.hasPic) { add('Type a word or add a picture to start'); return; }
   if (LAST.hasPic) add(`Picture <b>${LAST.picW.toFixed(1)} × ${LAST.picH.toFixed(1)} mm</b>`);
@@ -519,17 +536,24 @@ function meshXml(id, name, pindex, V, T){
 const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 
 async function make3mf(){
-  const Z = D.z;
+  const thickness = LAST.keyThickness;
+  const Z = { base: thickness * 0.7, burg: thickness * 0.85, top: thickness };
   const burg = prism(LAST.burgEx, Z.base, Z.burg);
   const art = prism(LAST.artEx, Z.base, Z.top);
   const count = segVal('count');
   const word = LAST.lines.join(' ') || 'Picture';
+  const sx = LAST.sx, sy = LAST.sy;
+  const baseV = [];
+  for (let i = 0; i < D.base.v.length; i += 3) baseV.push(D.base.v[i] * sx, D.base.v[i + 1] * sy, D.base.v[i + 2] * thickness / 4);
+  const baseMesh = { v: baseV, f: D.base.f };
   let objs = '';
-  objs += meshXml(2, 'Tag base (white)', 0, D.base.v, D.base.f);
+  objs += meshXml(2, 'Tag base (white)', 0, baseMesh.v, baseMesh.f);
   objs += meshXml(3, 'Panel (burgundy)', 1, burg.V, burg.T);
   objs += meshXml(4, 'Lettering (white)', 0, art.V, art.T);
-  const pos = count === 1 ? [[0, 0]] : count === 4 ? [[-39, -18], [39, -18], [-39, 18], [39, 18]]
-            : [0, 1, 2, 3, 4, 5, 6, 7].map(i => [(i % 2) * 78 - 39, Math.floor(i / 2) * 36 - 54]);
+  const gapX = LAST.keyLength + 8, gapY = LAST.keyWidth + 6;
+  const pos = count === 1 ? [[0, 0]]
+            : count === 4 ? [[-gapX / 2, -gapY / 2], [gapX / 2, -gapY / 2], [-gapX / 2, gapY / 2], [gapX / 2, gapY / 2]]
+            : [0, 1, 2, 3, 4, 5, 6, 7].map(i => [(i % 2) * gapX - gapX / 2, (Math.floor(i / 2) - 1.5) * gapY]);
   let build = '', id = 5;
   pos.forEach(([x, y], i) => {
     const tr = `1 0 0 0 1 0 0 0 1 ${x} ${y} 0`;
@@ -564,7 +588,8 @@ async function onDownload(){
     const inner = await make3mf();
     const outer = new JSZip();
     outer.file(name + '.3mf', inner);
-    outer.file('HOW_TO_PRINT.txt', 'Print face up, no supports.\r\n0-2.8 mm white base | 2.8-3.4 mm burgundy | 3.4-4.0 mm white letters.\r\nSingle-colour printer: filament change at 2.8 mm (burgundy) and 3.4 mm (white).\r\nMulti-colour: set parts to white / burgundy.\r\n');
+    const t = LAST.keyThickness, zBase = t * 0.7, zBurg = t * 0.85;
+    outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm.\r\n0-${zBase.toFixed(2)} mm white base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm burgundy | ${zBurg.toFixed(2)}-${t.toFixed(2)} mm white letters.\r\nSingle-colour printer: change filament at ${zBase.toFixed(2)} mm (burgundy) and ${zBurg.toFixed(2)} mm (white).\r\nMulti-colour: set parts to white / burgundy.\r\n`);
     const blob = await outer.generateAsync({ type: 'blob', compression: 'DEFLATE' });
     if (downloads) await downloads.save({ filename: name + '.zip', data: blob });
     else {   // plain web page (e.g. GitHub Pages): normal browser download
