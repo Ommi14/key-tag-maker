@@ -4,6 +4,8 @@ A browser tool that turns a word (Thai or English) and an optional picture into 
 
 **Use it:** open `index.html` from a web server (for example GitHub Pages). Opening the file directly from disk will not work, because the text engine is loaded as a module.
 
+**Live site:** https://ommi14.github.io/key-tag-maker/
+
 ## Features
 
 - Thai and English text, one or two lines, with an on-screen Thai keyboard
