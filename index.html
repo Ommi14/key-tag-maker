@@ -386,9 +386,15 @@ function build(){
   const borderInner = scalePts(D.border_inner);
   const borderOuter = scalePts(D.border_outer);
   const inner = withBorder ? borderInner : panel;
-  const hole = D.hole.map(([x, y]) => [ -28.5001 * sx + (x - -28.5001) * sx, 9 * sy + y * sy ]);
+  const holeRadius = 2.75;
+  const holeCx = -keyLength / 2 + holeRadius + 3;
+  const holeCy = keyWidth / 2 - holeRadius - 3;
+  const oldHoleCx = -28.5001;
+  const hole = D.hole.map(([x, y]) => [x - oldHoleCx + holeCx, y + holeCy]);
   const PANEL = [toPath(panel), toPath(hole).reverse()];
   const BORDER = [toPath(borderOuter), toPath(borderInner).reverse()];
+  const outline = scalePts(D.outline[0]);
+  const baseEx = [{ outer: toPath(outline), holes: [toPath(hole).reverse()] }];
   const xs = inner.map(p => p[0]), ys = inner.map(p => p[1]);
   const box = { x0: Math.min(...xs) + margin, x1: Math.max(...xs) - margin, y0: Math.min(...ys) + 1.8, y1: Math.max(...ys) - 1.8 };
 
@@ -453,7 +459,7 @@ function build(){
   const textH = textPaths.length ? (tb[3] - tb[1]) / SC : 0, textW = textPaths.length ? (tb[2] - tb[0]) / SC : 0;
   const lineH = lines.length ? textH / lines.length : 0;
 
-  LAST = { artEx, burgEx, lines, missing, textH, textW, lineH, fontKey, keyLength, keyWidth, keyThickness, letterThickness, sx, sy,
+  LAST = { artEx, burgEx, baseEx, lines, missing, textH, textW, lineH, fontKey, keyLength, keyWidth, keyThickness, letterThickness, sx, sy,
            hasPic: picPaths.length > 0, picW, picH,
            picEmpty: !!(tr && !tr.paths.length) || !!(tr && tr.paths.length && !picPaths.length) };
   draw(); stats();
@@ -465,8 +471,11 @@ function exToSvg(ex){
   return d;
 }
 function ringSvg(pts, sx = 1, sy = 1){ return 'M' + pts.map(p => (p[0] * sx).toFixed(3) + ' ' + (p[1] * sy).toFixed(3)).join('L') + 'Z'; }
-function movedHoleSvg(sx = 1, sy = 1){
-  const pts = D.hole.map(([x, y]) => [x * sx, (9 + y) * sy]);
+function movedHoleSvg(){
+  const oldHoleCx = -28.5001;
+  const holeCx = -LAST.keyLength / 2 + 5.75;
+  const holeCy = LAST.keyWidth / 2 - 5.75;
+  const pts = D.hole.map(([x, y]) => [x - oldHoleCx + holeCx, y + holeCy]);
   return ringSvg(pts);
 }
 function draw(){
@@ -558,16 +567,9 @@ async function make3mf(){
   const art = prism(LAST.artEx, Z.base, Z.top);
   const count = segVal('count');
   const word = LAST.lines.join(' ') || 'Picture';
-  const sx = LAST.sx, sy = LAST.sy;
-  const baseV = [];
-  for (let i = 0; i < D.base.v.length; i += 3) {
-    let x = D.base.v[i], y = D.base.v[i + 1];
-    if (pointInRing(x, y, D.hole)) y += 9;
-    baseV.push(x * sx, y * sy, D.base.v[i + 2] * thickness / 4);
-  }
-  const baseMesh = { v: baseV, f: D.base.f };
+  const base = prism(LAST.baseEx, 0, thickness);
   let objs = '';
-  objs += meshXml(2, 'Tag base', 0, baseMesh.v, baseMesh.f);
+  objs += meshXml(2, 'Tag base', 0, base.V, base.T);
   objs += meshXml(3, 'Panel', 1, burg.V, burg.T);
   objs += meshXml(4, 'Lettering', 2, art.V, art.T);
   const gapX = LAST.keyLength + 8, gapY = LAST.keyWidth + 6;
