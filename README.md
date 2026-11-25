@@ -15,7 +15,7 @@ A browser tool that turns a word (Thai or English) and an optional picture into 
 - 1, 4 or 8 tags per file
 - Adjustable key length (40–100 mm), width (20–50 mm) and thickness (3–6 mm)
 - Adjustable raised-letter height (4–6 mm) and separate base, panel and letter colors
-- 5.5 mm through-hole cut from the tag base and panel, positioned in the top-left area
+- 4 × 4 mm rounded-square through-hole with a 1 mm raised border, positioned 4 mm from the top and left
 
 ## Printing
 
@@ -28,7 +28,7 @@ Print face up with no supports.
 | 3.4 – 4.0 mm | White raised letters, picture and border |
 
 - One-colour printer: change filament at 2.8 mm (burgundy) and at 3.4 mm (white).
-- AMS / multi-colour: each tag has 3 parts already named by colour.
+- AMS / two-colour: the base and raised lettering use the base/raised colour; the panel uses the panel colour.
 
 ## Libraries
 
