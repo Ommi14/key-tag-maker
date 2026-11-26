@@ -91,7 +91,7 @@
     <div class="row"><span>Key length</span><input id="keyLength" type="range" min="40" max="100" step="1" value="70"><output id="keyLengthO">70 mm</output></div>
     <div class="row"><span>Key width</span><input id="keyWidth" type="range" min="20" max="50" step="1" value="30"><output id="keyWidthO">30 mm</output></div>
     <div class="row"><span>Key thickness</span><input id="keyThickness" type="range" min="3" max="6" step="0.5" value="4"><output id="keyThicknessO">4 mm</output></div>
-    <div class="row"><span>Letter height</span><input id="bold" type="range" min="2" max="4" step="0.1" value="4"><output id="boldO">4.0 mm</output></div>
+    <div class="row"><span>Letter height</span><input id="bold" type="range" min="4" max="6" step="0.1" value="4"><output id="boldO">4.0 mm</output></div>
     <div class="row"><span>Base / raised color</span><input id="baseColor" type="color" value="#f2f2ee"></div>
     <div class="row"><span>Panel color</span><input id="panelColor" type="color" value="#7d0d1e"></div>
     <div class="row"><span>Text size</span><input id="size" type="range" min="40" max="100" value="100"><output id="sizeO">100%</output></div>
@@ -142,7 +142,7 @@
       </table>
       <b>One-colour printer:</b> add a filament change at <span id="singleBaseLabel">2.8</span> mm (burgundy) and at <span id="singleBurgLabel">3.4</span> mm (back to white).<br>
       <b>AMS / two-colour:</b> the base and raised lettering use one colour; the panel uses the second colour.<br>
-      <b>Hole:</b> 5 mm circular cutout in the middle-left, inset 1 mm from the left edge, with a 0.6 mm raised white border.
+      <b>Hole:</b> 5 mm circular cutout in the middle-left, inset 1 mm from the left edge.
     </details>
   </section>
 </main>
@@ -366,22 +366,6 @@ function shapeLine(fontKey, text){
 
 // ---------------- build the design ----------------
 let LAST = null;
-function roundedRectPoints(x0, y0, w, h, r){
-  const pts = [];
-  const corners = [
-    [x0 + w - r, y0 + h - r, 0, 90],
-    [x0 + r, y0 + h - r, 90, 180],
-    [x0 + r, y0 + r, 180, 270],
-    [x0 + w - r, y0 + r, 270, 360]
-  ];
-  corners.forEach(([cx, cy, a0, a1]) => {
-    for (let i = 0; i <= 12; i++) {
-      const a = (a0 + (a1 - a0) * i / 12) * Math.PI / 180;
-      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
-    }
-  });
-  return pts;
-}
 function circlePoints(cx, cy, radius){
   const pts = [];
   for (let i = 0; i < 48; i++) {
@@ -396,32 +380,28 @@ function build(){
   const sizePct = +$('size').value / 100, margin = +$('margin').value, letterThickness = +$('bold').value;
   const withBorder = segVal('border') === 1;
   const keyLength = +$('keyLength').value, keyWidth = +$('keyWidth').value, keyThickness = +$('keyThickness').value;
-  const zBase = letterThickness * 0.7;
-  const zBurg = letterThickness * 0.875;
-  const zTop = letterThickness;
+  const zBase = keyThickness === 4 ? 2.8 : keyThickness * 0.7;
+  const zBurg = keyThickness === 4 ? 3.5 : keyThickness * 0.875;
+  const zTop = Math.max(letterThickness, zBurg);
   $('zBaseLabel').textContent = `0 – ${zBase.toFixed(2)} mm`;
   $('zBurgLabel').textContent = `${zBase.toFixed(2)} – ${zBurg.toFixed(2)} mm`;
   $('zTopLabel').textContent = `${zBurg.toFixed(2)} – ${zTop.toFixed(1)} mm`;
   $('singleBaseLabel').textContent = zBase.toFixed(2);
   $('singleBurgLabel').textContent = zBurg.toFixed(2);
   const sx = keyLength / 70, sy = keyWidth / 30;
-  const panelInset = 1.8;
-  const outer = roundedRectPoints(-keyLength / 2, -keyWidth / 2, keyLength, keyWidth, 3);
-  const panel = roundedRectPoints(-keyLength / 2 + panelInset, -keyWidth / 2 + panelInset,
-    keyLength - panelInset * 2, keyWidth - panelInset * 2, 1.8);
-  const borderOuter = roundedRectPoints(-keyLength / 2 + 2.5, -keyWidth / 2 + 2.5,
-    keyLength - 5, keyWidth - 5, 1.2);
-  const borderInner = roundedRectPoints(-keyLength / 2 + 3.1, -keyWidth / 2 + 3.1,
-    keyLength - 6.2, keyWidth - 6.2, 0.9);
+  const scalePts = pts => pts.map(([x, y]) => [x * sx, y * sy]);
+  const panel = scalePts(D.panel);
+  const borderInner = scalePts(D.border_inner);
+  const borderOuter = scalePts(D.border_outer);
   const inner = withBorder ? borderInner : panel;
-  const holeDiameter = 5;
-  const holeInset = 1;
+  const holeDiameter = 5, holeInset = 1;
   const holeCx = -keyLength / 2 + holeInset + holeDiameter / 2;
   const holeCy = 0;
   const hole = circlePoints(holeCx, holeCy, holeDiameter / 2);
   const PANEL = [toPath(panel), toPath(hole).reverse()];
   const BORDER = [toPath(borderOuter), toPath(borderInner).reverse()];
-  const baseEx = [{ outer: toPath(outer), holes: [toPath(hole).reverse()] }];
+  const outline = scalePts(D.outline[0]);
+  const baseEx = [{ outer: toPath(outline), holes: [toPath(hole).reverse()] }];
   const xs = inner.map(p => p[0]), ys = inner.map(p => p[1]);
   const box = { x0: Math.min(...xs) + margin, x1: Math.max(...xs) - margin, y0: Math.min(...ys) + 1.8, y1: Math.max(...ys) - 1.8 };
 
@@ -485,9 +465,7 @@ function build(){
   const artU = clip(artSrc, null, C.ClipType.ctUnion);
   const artEx = artU.length ? clipTree(artU, PANEL, C.ClipType.ctIntersection) : [];
   const artPaths = artU.length ? clip(artU, PANEL, C.ClipType.ctIntersection) : [];
-  let burgEx = clipTree(PANEL, artPaths, C.ClipType.ctDifference);
-  burgEx = subtractHoleEx(burgEx, hole);
-  const artExOpen = subtractHoleEx(artEx, hole);
+  const burgEx = clipTree(PANEL, artPaths, C.ClipType.ctDifference);
 
   // text ink size in mm
   let tb = [1e9, 1e9, -1e9, -1e9];
@@ -495,7 +473,7 @@ function build(){
   const textH = textPaths.length ? (tb[3] - tb[1]) / SC : 0, textW = textPaths.length ? (tb[2] - tb[0]) / SC : 0;
   const lineH = lines.length ? textH / lines.length : 0;
 
-  LAST = { artEx: artExOpen, burgEx, baseEx, lines, missing, textH, textW, lineH, fontKey, keyLength, keyWidth, keyThickness, letterThickness, sx, sy,
+  LAST = { artEx, burgEx, baseEx, lines, missing, textH, textW, lineH, fontKey, keyLength, keyWidth, keyThickness, letterThickness, sx, sy,
            hasPic: picPaths.length > 0, picW, picH,
            picEmpty: !!(tr && !tr.paths.length) || !!(tr && tr.paths.length && !picPaths.length) };
   draw(); stats();
@@ -505,19 +483,6 @@ function exToSvg(ex){
   let d = '';
   ex.forEach(e => [e.outer, ...e.holes].forEach(r => { d += 'M' + r.map(p => (p.X / SC).toFixed(3) + ' ' + (p.Y / SC).toFixed(3)).join('L') + 'Z'; }));
   return d;
-}
-function exToPaths(ex){
-  const paths = [];
-  ex.forEach(e => {
-    paths.push(e.outer.map(p => ({X: p.X, Y: p.Y})));
-    e.holes.forEach(h => paths.push(h.map(p => ({X: p.X, Y: p.Y})).reverse()));
-  });
-  return paths;
-}
-function subtractHoleEx(ex, holePoints){
-  if (!ex.length) return ex;
-  const cut = [toPath(holePoints).reverse()];
-  return clipTree(exToPaths(ex), cut, C.ClipType.ctDifference);
 }
 function ringSvg(pts, sx = 1, sy = 1){ return 'M' + pts.map(p => (p[0] * sx).toFixed(3) + ' ' + (p[1] * sy).toFixed(3)).join('L') + 'Z'; }
 function movedHoleSvg(){
@@ -531,8 +496,7 @@ function draw(){
   svg.setAttribute('viewBox', `${-LAST.keyLength / 2 - 4} ${-LAST.keyWidth / 2 - 4} ${LAST.keyLength + 8} ${LAST.keyWidth + 8}`);
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.setAttribute('transform', 'scale(1,-1)');
   const P = (d, fill, extra = {}) => { const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d); p.setAttribute('fill', fill); p.setAttribute('fill-rule', 'evenodd'); for (const k in extra) p.setAttribute(k, extra[k]); g.appendChild(p); };
-  P(ringSvg(roundedRectPoints(-LAST.keyLength / 2, -LAST.keyWidth / 2, LAST.keyLength, LAST.keyWidth, 3)) +
-    movedHoleSvg(LAST.sx, LAST.sy), $('baseColor').value, { stroke: '#d9d0c8', 'stroke-width': 0.25, 'fill-rule': 'evenodd' });
+  P(ringSvg(D.outline[0], LAST.sx, LAST.sy) + movedHoleSvg(LAST.sx, LAST.sy), $('baseColor').value, { stroke: '#d9d0c8', 'stroke-width': 0.25 });
   P(exToSvg(LAST.burgEx), $('panelColor').value);
   P(exToSvg(LAST.artEx), $('baseColor').value);
   svg.appendChild(g);
@@ -611,9 +575,9 @@ function pointInRing(x, y, ring){
 async function make3mf(){
   const thickness = LAST.keyThickness;
   const Z = {
-    base: LAST.letterThickness * 0.7,
-    burg: LAST.letterThickness * 0.875,
-    top: LAST.letterThickness
+    base: thickness === 4 ? 2.8 : thickness * 0.7,
+    burg: thickness === 4 ? 3.5 : thickness * 0.875,
+    top: Math.max(LAST.letterThickness, thickness === 4 ? 3.5 : thickness * 0.875)
   };
   const burg = prism(LAST.burgEx, Z.base, Z.burg);
   const art = prism(LAST.artEx, Z.base, Z.top);
@@ -663,8 +627,8 @@ async function onDownload(){
     const inner = await make3mf();
     const outer = new JSZip();
     outer.file(name + '.3mf', inner);
-    const t = LAST.keyThickness, zBase = LAST.letterThickness * 0.7, zBurg = LAST.letterThickness * 0.875, zTop = LAST.letterThickness;
-    outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm. Letter height: ${LAST.letterThickness.toFixed(1)} mm.\r\n0-${zBase.toFixed(2)} mm base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm panel | ${zBurg.toFixed(2)}-${zTop.toFixed(2)} mm raised lettering and border.\r\nHole: 5 mm circular hole in the middle-left, inset 1 mm from the left edge, with a 0.6 mm raised border.\r\nTwo-colour printer: use the base/raised colour for the base and raised parts, and the panel colour for the panel.\r\n`);
+    const t = LAST.keyThickness, zBase = t === 4 ? 2.8 : t * 0.7, zBurg = t === 4 ? 3.5 : t * 0.875, zTop = Math.max(LAST.letterThickness, zBurg);
+    outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm. Letter height: ${LAST.letterThickness.toFixed(1)} mm.\r\n0-${zBase.toFixed(2)} mm base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm panel | ${zBurg.toFixed(2)}-${zTop.toFixed(2)} mm raised lettering and border.\r\nHole: 5 mm circular hole in the middle-left, inset 1 mm from the left edge.\r\nTwo-colour printer: use the base/raised colour for the base and raised parts, and the panel colour for the panel.\r\n`);
     const blob = await outer.generateAsync({ type: 'blob', compression: 'DEFLATE' });
     if (downloads) await downloads.save({ filename: name + '.zip', data: blob });
     else {   // plain web page (e.g. GitHub Pages): normal browser download
