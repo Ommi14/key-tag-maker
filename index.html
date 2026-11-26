@@ -91,7 +91,7 @@
     <div class="row"><span>Key length</span><input id="keyLength" type="range" min="40" max="100" step="1" value="70"><output id="keyLengthO">70 mm</output></div>
     <div class="row"><span>Key width</span><input id="keyWidth" type="range" min="20" max="50" step="1" value="30"><output id="keyWidthO">30 mm</output></div>
     <div class="row"><span>Key thickness</span><input id="keyThickness" type="range" min="3" max="6" step="0.5" value="4"><output id="keyThicknessO">4 mm</output></div>
-    <div class="row"><span>Letter height</span><input id="bold" type="range" min="4" max="6" step="0.1" value="4"><output id="boldO">4.0 mm</output></div>
+    <div class="row"><span>Letter height</span><input id="bold" type="range" min="2" max="5" step="0.1" value="4"><output id="boldO">4.0 mm</output></div>
     <div class="row"><span>Base / raised color</span><input id="baseColor" type="color" value="#f2f2ee"></div>
     <div class="row"><span>Panel color</span><input id="panelColor" type="color" value="#7d0d1e"></div>
     <div class="row"><span>Text size</span><input id="size" type="range" min="40" max="100" value="100"><output id="sizeO">100%</output></div>
@@ -142,7 +142,7 @@
       </table>
       <b>One-colour printer:</b> add a filament change at <span id="singleBaseLabel">2.8</span> mm (burgundy) and at <span id="singleBurgLabel">3.4</span> mm (back to white).<br>
       <b>AMS / two-colour:</b> the base and raised lettering use one colour; the panel uses the second colour.<br>
-      <b>Hole:</b> 5.5 mm circular cutout in the middle-left, inset 1 mm from the left edge, with a 0.6 mm raised white border.
+      <b>Hole:</b> 5.5 mm circular cutout in the middle-left, inset 1 mm from the left edge.
     </details>
   </section>
 </main>
@@ -473,14 +473,7 @@ function build(){
     });
   });
   textPaths = clip(textPaths, null, C.ClipType.ctUnion);
-  const holeOuter = [];
-  if (hole.length) {
-    const co = new C.ClipperOffset(2, 0.05 * SC);
-    co.AddPaths([toPath(hole)], C.JoinType.jtRound, C.EndType.etClosedPolygon);
-    co.Execute(holeOuter, 0.6 * SC);
-  }
-  const holeRing = holeOuter.length ? clip(holeOuter, [toPath(hole)], C.ClipType.ctDifference) : [];
-  const artSrc = (withBorder ? textPaths.concat(BORDER) : textPaths).concat(picPaths).concat(holeRing);
+  const artSrc = (withBorder ? textPaths.concat(BORDER) : textPaths).concat(picPaths);
   const artU = clip(artSrc, null, C.ClipType.ctUnion);
   const artEx = artU.length ? clipTree(artU, PANEL, C.ClipType.ctIntersection) : [];
   const artPaths = artU.length ? clip(artU, PANEL, C.ClipType.ctIntersection) : [];
@@ -648,7 +641,7 @@ async function onDownload(){
     const outer = new JSZip();
     outer.file(name + '.3mf', inner);
     const t = LAST.keyThickness, zBase = t === 4 ? 2.8 : t * 0.7, zBurg = t === 4 ? 3.5 : t * 0.875, zTop = Math.max(LAST.letterThickness, zBurg);
-    outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm. Letter height: ${LAST.letterThickness.toFixed(1)} mm.\r\n0-${zBase.toFixed(2)} mm base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm panel | ${zBurg.toFixed(2)}-${zTop.toFixed(2)} mm raised lettering and border.\r\nHole: 5.5 mm circular hole in the middle-left, inset 1 mm from the left edge, with a 0.6 mm raised border.\r\nTwo-colour printer: use the base/raised colour for the base and raised parts, and the panel colour for the panel.\r\n`);
+    outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm. Letter height: ${LAST.letterThickness.toFixed(1)} mm.\r\n0-${zBase.toFixed(2)} mm base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm panel | ${zBurg.toFixed(2)}-${zTop.toFixed(2)} mm raised lettering and border.\r\nHole: 5.5 mm circular hole in the middle-left, inset 1 mm from the left edge.\r\nTwo-colour printer: use the base/raised colour for the base and raised parts, and the panel colour for the panel.\r\n`);
     const blob = await outer.generateAsync({ type: 'blob', compression: 'DEFLATE' });
     if (downloads) await downloads.save({ filename: name + '.zip', data: blob });
     else {   // plain web page (e.g. GitHub Pages): normal browser download
