@@ -15,7 +15,7 @@ A browser tool that turns a word (Thai or English) and an optional picture into 
 - 1, 4 or 8 tags per file
 - Adjustable key length (40–100 mm), width (20–50 mm) and thickness (3–6 mm)
 - Adjustable raised-letter height (2–4 mm) and separate base, panel and letter colors
-- 5 mm circular through-hole, inset 1 mm from the top-left, with a 0.6 mm raised white border
+- 5 mm circular through-hole in the middle-left, inset 1 mm from the left edge, with a 0.6 mm raised white border
 
 ## Printing
 
