@@ -142,7 +142,7 @@
       </table>
       <b>One-colour printer:</b> add a filament change at <span id="singleBaseLabel">2.8</span> mm (burgundy) and at <span id="singleBurgLabel">3.4</span> mm (back to white).<br>
       <b>AMS / two-colour:</b> the base and raised lettering use one colour; the panel uses the second colour.<br>
-      <b>Hole:</b> 5.5 mm circular cutout in the middle-left, inset 1 mm from the left edge.
+      <b>Hole:</b> 5.5 mm circular cutout in the middle-left, inset 1 mm from the left edge, with a 0.6 mm raised white circle line.
     </details>
   </section>
 </main>
@@ -473,7 +473,12 @@ function build(){
     });
   });
   textPaths = clip(textPaths, null, C.ClipType.ctUnion);
-  const artSrc = (withBorder ? textPaths.concat(BORDER) : textPaths).concat(picPaths);
+  const holeRingOuter = [];
+  const holeRingOffset = new C.ClipperOffset(2, 0.05 * SC);
+  holeRingOffset.AddPaths([toPath(hole)], C.JoinType.jtRound, C.EndType.etClosedPolygon);
+  holeRingOffset.Execute(holeRingOuter, 0.6 * SC);
+  const holeRing = holeRingOuter.length ? clip(holeRingOuter, [toPath(hole)], C.ClipType.ctDifference) : [];
+  const artSrc = (withBorder ? textPaths.concat(BORDER) : textPaths).concat(picPaths).concat(holeRing);
   const artU = clip(artSrc, null, C.ClipType.ctUnion);
   const artEx = artU.length ? clipTree(artU, PANEL, C.ClipType.ctIntersection) : [];
   const artPaths = artU.length ? clip(artU, PANEL, C.ClipType.ctIntersection) : [];
@@ -655,7 +660,7 @@ async function onDownload(){
     const outer = new JSZip();
     outer.file(name + '.3mf', inner);
     const t = LAST.keyThickness, zBase = t === 4 ? 2.8 : t * 0.7, zBurg = t === 4 ? 3.5 : t * 0.875, zTop = Math.max(LAST.letterThickness, zBurg);
-    outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm. Letter height: ${LAST.letterThickness.toFixed(1)} mm.\r\n0-${zBase.toFixed(2)} mm base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm panel | ${zBurg.toFixed(2)}-${zTop.toFixed(2)} mm raised lettering and border.\r\nHole: 5.5 mm circular hole in the middle-left, inset 1 mm from the left edge.\r\nTwo-colour printer: use the base/raised colour for the base and raised parts, and the panel colour for the panel.\r\n`);
+    outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm. Letter height: ${LAST.letterThickness.toFixed(1)} mm.\r\n0-${zBase.toFixed(2)} mm base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm panel | ${zBurg.toFixed(2)}-${zTop.toFixed(2)} mm raised lettering and border.\r\nHole: 5.5 mm circular hole in the middle-left, inset 1 mm from the left edge, with a 0.6 mm raised white circle line.\r\nTwo-colour printer: use the base/raised colour for the base and raised parts, and the panel colour for the panel.\r\n`);
     const blob = await outer.generateAsync({ type: 'blob', compression: 'DEFLATE' });
     if (downloads) await downloads.save({ filename: name + '.zip', data: blob });
     else {   // plain web page (e.g. GitHub Pages): normal browser download
