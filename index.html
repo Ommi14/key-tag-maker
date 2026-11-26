@@ -485,7 +485,9 @@ function build(){
   const artU = clip(artSrc, null, C.ClipType.ctUnion);
   const artEx = artU.length ? clipTree(artU, PANEL, C.ClipType.ctIntersection) : [];
   const artPaths = artU.length ? clip(artU, PANEL, C.ClipType.ctIntersection) : [];
-  const burgEx = clipTree(PANEL, artPaths, C.ClipType.ctDifference);
+  let burgEx = clipTree(PANEL, artPaths, C.ClipType.ctDifference);
+  burgEx = subtractHoleEx(burgEx, hole);
+  const artExOpen = subtractHoleEx(artEx, hole);
 
   // text ink size in mm
   let tb = [1e9, 1e9, -1e9, -1e9];
@@ -493,7 +495,7 @@ function build(){
   const textH = textPaths.length ? (tb[3] - tb[1]) / SC : 0, textW = textPaths.length ? (tb[2] - tb[0]) / SC : 0;
   const lineH = lines.length ? textH / lines.length : 0;
 
-  LAST = { artEx, burgEx, baseEx, lines, missing, textH, textW, lineH, fontKey, keyLength, keyWidth, keyThickness, letterThickness, sx, sy,
+  LAST = { artEx: artExOpen, burgEx, baseEx, lines, missing, textH, textW, lineH, fontKey, keyLength, keyWidth, keyThickness, letterThickness, sx, sy,
            hasPic: picPaths.length > 0, picW, picH,
            picEmpty: !!(tr && !tr.paths.length) || !!(tr && tr.paths.length && !picPaths.length) };
   draw(); stats();
@@ -503,6 +505,19 @@ function exToSvg(ex){
   let d = '';
   ex.forEach(e => [e.outer, ...e.holes].forEach(r => { d += 'M' + r.map(p => (p.X / SC).toFixed(3) + ' ' + (p.Y / SC).toFixed(3)).join('L') + 'Z'; }));
   return d;
+}
+function exToPaths(ex){
+  const paths = [];
+  ex.forEach(e => {
+    paths.push(e.outer.map(p => ({X: p.X, Y: p.Y})));
+    e.holes.forEach(h => paths.push(h.map(p => ({X: p.X, Y: p.Y})).reverse()));
+  });
+  return paths;
+}
+function subtractHoleEx(ex, holePoints){
+  if (!ex.length) return ex;
+  const cut = [toPath(holePoints).reverse()];
+  return clipTree(exToPaths(ex), cut, C.ClipType.ctDifference);
 }
 function ringSvg(pts, sx = 1, sy = 1){ return 'M' + pts.map(p => (p[0] * sx).toFixed(3) + ' ' + (p[1] * sy).toFixed(3)).join('L') + 'Z'; }
 function movedHoleSvg(){
@@ -517,7 +532,7 @@ function draw(){
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.setAttribute('transform', 'scale(1,-1)');
   const P = (d, fill, extra = {}) => { const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d); p.setAttribute('fill', fill); p.setAttribute('fill-rule', 'evenodd'); for (const k in extra) p.setAttribute(k, extra[k]); g.appendChild(p); };
   P(ringSvg(roundedRectPoints(-LAST.keyLength / 2, -LAST.keyWidth / 2, LAST.keyLength, LAST.keyWidth, 3)) +
-    movedHoleSvg(LAST.sx, LAST.sy), $('baseColor').value, { stroke: '#d9d0c8', 'stroke-width': 0.25 });
+    movedHoleSvg(LAST.sx, LAST.sy), $('baseColor').value, { stroke: '#d9d0c8', 'stroke-width': 0.25, 'fill-rule': 'evenodd' });
   P(exToSvg(LAST.burgEx), $('panelColor').value);
   P(exToSvg(LAST.artEx), $('baseColor').value);
   svg.appendChild(g);
