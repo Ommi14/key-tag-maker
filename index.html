@@ -374,22 +374,6 @@ function circlePoints(cx, cy, radius){
   }
   return pts;
 }
-function roundedRectPoints(x0, y0, width, height, radius){
-  const pts = [];
-  const corners = [
-    [x0 + width - radius, y0 + height - radius, 0, 90],
-    [x0 + radius, y0 + height - radius, 90, 180],
-    [x0 + radius, y0 + radius, 180, 270],
-    [x0 + width - radius, y0 + radius, 270, 360]
-  ];
-  corners.forEach(([cx, cy, a0, a1]) => {
-    for (let i = 0; i <= 12; i++) {
-      const angle = (a0 + (a1 - a0) * i / 12) * Math.PI / 180;
-      pts.push([cx + radius * Math.cos(angle), cy + radius * Math.sin(angle)]);
-    }
-  });
-  return pts;
-}
 function build(){
   const fontKey = $('font').value;
   const lines = txt.value.split('\n').map(s => s.replace(/\s+$/, '')).filter((s, i, a) => s.length || i < a.length - 1).filter(s => s.length);
@@ -406,12 +390,9 @@ function build(){
   $('singleBurgLabel').textContent = zBurg.toFixed(2);
   const sx = keyLength / 70, sy = keyWidth / 30;
   const scalePts = pts => pts.map(([x, y]) => [x * sx, y * sy]);
-  const panel = roundedRectPoints(-keyLength / 2 + 1.8, -keyWidth / 2 + 1.8,
-    keyLength - 3.6, keyWidth - 3.6, 1.8);
-  const borderOuter = roundedRectPoints(-keyLength / 2 + 2.5, -keyWidth / 2 + 2.5,
-    keyLength - 5, keyWidth - 5, 1.2);
-  const borderInner = roundedRectPoints(-keyLength / 2 + 3.1, -keyWidth / 2 + 3.1,
-    keyLength - 6.2, keyWidth - 6.2, 0.9);
+  const panel = scalePts(D.panel);
+  const borderInner = scalePts(D.border_inner);
+  const borderOuter = scalePts(D.border_outer);
   const inner = withBorder ? borderInner : panel;
   const holeDiameter = 5.5, holeInset = 1;
   const holeCx = -keyLength / 2 + holeInset + holeDiameter / 2;
@@ -419,7 +400,7 @@ function build(){
   const hole = circlePoints(holeCx, holeCy, holeDiameter / 2);
   const PANEL = [toPath(panel), toPath(hole).reverse()];
   const BORDER = [toPath(borderOuter), toPath(borderInner).reverse()];
-  const outline = roundedRectPoints(-keyLength / 2, -keyWidth / 2, keyLength, keyWidth, 3);
+  const outline = scalePts(D.outline[0]);
   const baseEx = [{ outer: toPath(outline), holes: [toPath(hole).reverse()] }];
   const xs = inner.map(p => p[0]), ys = inner.map(p => p[1]);
   const box = { x0: Math.min(...xs) + margin, x1: Math.max(...xs) - margin, y0: Math.min(...ys) + 1.8, y1: Math.max(...ys) - 1.8 };
@@ -527,8 +508,8 @@ function draw(){
   svg.setAttribute('viewBox', `${-LAST.keyLength / 2 - 4} ${-LAST.keyWidth / 2 - 4} ${LAST.keyLength + 8} ${LAST.keyWidth + 8}`);
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.setAttribute('transform', 'scale(1,-1)');
   const P = (d, fill, extra = {}) => { const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d); p.setAttribute('fill', fill); p.setAttribute('fill-rule', 'evenodd'); for (const k in extra) p.setAttribute(k, extra[k]); g.appendChild(p); };
-  P(ringSvg(roundedRectPoints(-LAST.keyLength / 2, -LAST.keyWidth / 2, LAST.keyLength, LAST.keyWidth, 3)) +
-    movedHoleSvg(LAST.sx, LAST.sy), $('baseColor').value, { stroke: '#d9d0c8', 'stroke-width': 0.25 });
+  P(ringSvg(D.outline[0], LAST.sx, LAST.sy) + movedHoleSvg(LAST.sx, LAST.sy), $('baseColor').value,
+    { stroke: '#d9d0c8', 'stroke-width': 0.25 });
   P(exToSvg(LAST.burgEx), $('panelColor').value);
   P(exToSvg(LAST.artEx), $('baseColor').value);
   svg.appendChild(g);
