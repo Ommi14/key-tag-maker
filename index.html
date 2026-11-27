@@ -413,7 +413,7 @@ function build(){
   const borderInner = roundedRectPoints(-keyLength / 2 + 3.1, -keyWidth / 2 + 3.1,
     keyLength - 6.2, keyWidth - 6.2, 0.9);
   const inner = withBorder ? borderInner : panel;
-  const holeDiameter = 5.5, holeInset = 1;
+  const holeDiameter = 5.5, holeInset = 1.5;
   const holeCx = -keyLength / 2 + holeInset + holeDiameter / 2;
   const holeCy = 0;
   const hole = circlePoints(holeCx, holeCy, holeDiameter / 2);
@@ -505,7 +505,7 @@ function exToSvg(ex){
 }
 function ringSvg(pts, sx = 1, sy = 1){ return 'M' + pts.map(p => (p[0] * sx).toFixed(3) + ' ' + (p[1] * sy).toFixed(3)).join('L') + 'Z'; }
 function movedHoleSvg(){
-  const holeCx = -LAST.keyLength / 2 + 3.5;
+  const holeCx = -LAST.keyLength / 2 + 4;
   const holeCy = 0;
   return ringSvg(circlePoints(holeCx, holeCy, 2.75));
 }
@@ -581,6 +581,23 @@ function meshXml(id, name, pindex, V, T){
   const ts = []; for (let i = 0; i < T.length; i += 3) ts.push(`<triangle v1="${T[i]}" v2="${T[i+1]}" v3="${T[i+2]}"/>`);
   return `<object id="${id}" name="${name}" type="model" pid="1" pindex="${pindex}"><mesh><vertices>${vs.join('')}</vertices><triangles>${ts.join('')}</triangles></mesh></object>`;
 }
+function combinedMeshXml(id, name, parts){
+  const vs = [], ts = [], matVs = [];
+  let offset = 0;
+  parts.forEach(part => {
+    for (let i = 0; i < part.V.length; i += 3) vs.push(`<vertex x="${part.V[i].toFixed(4)}" y="${part.V[i+1].toFixed(4)}" z="${part.V[i+2].toFixed(4)}"/>`);
+    for (let i = 0; i < part.T.length; i += 3) {
+      ts.push(`<triangle v1="${part.T[i] + offset}" v2="${part.T[i+1] + offset}" v3="${part.T[i+2] + offset}" pid="1" p1="${part.p1}"/>`);
+      matVs.push(part.p1);
+    }
+    offset += part.V.length / 3;
+  });
+  return `<object id="${id}" name="${name}" type="model"><mesh><vertices>${vs.join('')}</vertices><triangles>${ts.join('')}</triangles></mesh></object>`;
+}
+function mergeMeshes(a, b){
+  const offset = a.V.length / 3;
+  return { V: a.V.concat(b.V), T: a.T.concat(b.T.map(t => t + offset)) };
+}
 const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 
 function pointInRing(x, y, ring){
@@ -604,10 +621,12 @@ async function make3mf(){
   const count = segVal('count');
   const word = LAST.lines.join(' ') || 'Picture';
   const base = prism(LAST.baseEx, 0, thickness);
+  const white = mergeMeshes(base, art);
   let objs = '';
-  objs += meshXml(2, 'Tag base', 0, base.V, base.T);
-  objs += meshXml(3, 'Panel', 1, burg.V, burg.T);
-  objs += meshXml(4, 'Base and raised lettering', 0, art.V, art.T);
+  objs += combinedMeshXml(2, 'Key tag', [
+    { V: white.V, T: white.T, p1: 0 },
+    { V: burg.V, T: burg.T, p1: 1 }
+  ]);
   const gapX = LAST.keyLength + 8, gapY = LAST.keyWidth + 6;
   const pos = count === 1 ? [[0, 0]]
             : count === 4 ? [[-gapX / 2, -gapY / 2], [gapX / 2, -gapY / 2], [-gapX / 2, gapY / 2], [gapX / 2, gapY / 2]]
@@ -616,7 +635,7 @@ async function make3mf(){
   pos.forEach(([x, y], i) => {
     const tr = `1 0 0 0 1 0 0 0 1 ${x} ${y} 0`;
     objs += `<object id="${id}" name="${esc(word)} key tag${count > 1 ? ' ' + (i + 1) : ''}" type="model"><components>` +
-      `<component objectid="2" transform="${tr}"/><component objectid="3" transform="${tr}"/><component objectid="4" transform="${tr}"/></components></object>`;
+      `<component objectid="2" transform="${tr}"/></components></object>`;
     build += `<item objectid="${id}"/>`; id++;
   });
   const model = `<?xml version="1.0" encoding="UTF-8"?>\n<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">` +
