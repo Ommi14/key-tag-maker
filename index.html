@@ -505,7 +505,7 @@ function exToSvg(ex){
 }
 function ringSvg(pts, sx = 1, sy = 1){ return 'M' + pts.map(p => (p[0] * sx).toFixed(3) + ' ' + (p[1] * sy).toFixed(3)).join('L') + 'Z'; }
 function movedHoleSvg(){
-  const holeCx = -LAST.keyLength / 2 + 4;
+  const holeCx = -LAST.keyLength / 2 + 4.25;
   const holeCy = 0;
   return ringSvg(circlePoints(holeCx, holeCy, 2.75));
 }
@@ -617,10 +617,10 @@ async function make3mf(){
     top: LAST.letterThickness
   };
   const burg = prism(LAST.burgEx, Z.base, Z.burg);
-  const art = prism(LAST.artEx, Z.base, Z.top);
+  const art = prism(LAST.artEx, Z.burg, Z.top);
   const count = segVal('count');
   const word = LAST.lines.join(' ') || 'Picture';
-  const base = prism(LAST.baseEx, 0, thickness);
+  const base = prism(LAST.baseEx, 0, Z.base);
   const white = mergeMeshes(base, art);
   let objs = '';
   objs += combinedMeshXml(2, 'Key tag', [
