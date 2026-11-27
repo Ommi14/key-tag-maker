@@ -91,7 +91,7 @@
     <div class="row"><span>Key length</span><input id="keyLength" type="range" min="40" max="100" step="1" value="70"><output id="keyLengthO">70 mm</output></div>
     <div class="row"><span>Key width</span><input id="keyWidth" type="range" min="20" max="50" step="1" value="30"><output id="keyWidthO">30 mm</output></div>
     <div class="row"><span>Key thickness</span><input id="keyThickness" type="range" min="3" max="6" step="0.5" value="4"><output id="keyThicknessO">4 mm</output></div>
-    <div class="row"><span>Letter height</span><input id="bold" type="range" min="4" max="6" step="0.1" value="4"><output id="boldO">4.0 mm</output></div>
+    <div class="row"><span>Letter height</span><input id="bold" type="range" min="2" max="5" step="0.1" value="4"><output id="boldO">4.0 mm</output></div>
     <div class="row"><span>Base / raised color</span><input id="baseColor" type="color" value="#f2f2ee"></div>
     <div class="row"><span>Panel color</span><input id="panelColor" type="color" value="#7d0d1e"></div>
     <div class="row"><span>Text size</span><input id="size" type="range" min="40" max="100" value="100"><output id="sizeO">100%</output></div>
@@ -396,9 +396,9 @@ function build(){
   const sizePct = +$('size').value / 100, margin = +$('margin').value, letterThickness = +$('bold').value;
   const withBorder = segVal('border') === 1;
   const keyLength = +$('keyLength').value, keyWidth = +$('keyWidth').value, keyThickness = +$('keyThickness').value;
-  const zBase = keyThickness === 4 ? 2.8 : keyThickness * 0.7;
-  const zBurg = keyThickness === 4 ? 3.5 : keyThickness * 0.875;
-  const zTop = Math.max(letterThickness, zBurg);
+  const zBase = letterThickness * 0.7;
+  const zBurg = letterThickness * 0.875;
+  const zTop = letterThickness;
   $('zBaseLabel').textContent = `0 – ${zBase.toFixed(2)} mm`;
   $('zBurgLabel').textContent = `${zBase.toFixed(2)} – ${zBurg.toFixed(2)} mm`;
   $('zTopLabel').textContent = `${zBurg.toFixed(2)} – ${zTop.toFixed(1)} mm`;
@@ -595,9 +595,9 @@ function pointInRing(x, y, ring){
 async function make3mf(){
   const thickness = LAST.keyThickness;
   const Z = {
-    base: thickness === 4 ? 2.8 : thickness * 0.7,
-    burg: thickness === 4 ? 3.5 : thickness * 0.875,
-    top: Math.max(LAST.letterThickness, thickness === 4 ? 3.5 : thickness * 0.875)
+    base: LAST.letterThickness * 0.7,
+    burg: LAST.letterThickness * 0.875,
+    top: LAST.letterThickness
   };
   const burg = prism(LAST.burgEx, Z.base, Z.burg);
   const art = prism(LAST.artEx, Z.base, Z.top);
@@ -647,7 +647,7 @@ async function onDownload(){
     const inner = await make3mf();
     const outer = new JSZip();
     outer.file(name + '.3mf', inner);
-    const t = LAST.keyThickness, zBase = t === 4 ? 2.8 : t * 0.7, zBurg = t === 4 ? 3.5 : t * 0.875, zTop = Math.max(LAST.letterThickness, zBurg);
+    const t = LAST.keyThickness, zBase = LAST.letterThickness * 0.7, zBurg = LAST.letterThickness * 0.875, zTop = LAST.letterThickness;
     outer.file('HOW_TO_PRINT.txt', `Print face up, no supports.\r\nKey size: ${LAST.keyLength} x ${LAST.keyWidth} x ${t} mm. Letter height: ${LAST.letterThickness.toFixed(1)} mm.\r\n0-${zBase.toFixed(2)} mm base | ${zBase.toFixed(2)}-${zBurg.toFixed(2)} mm panel | ${zBurg.toFixed(2)}-${zTop.toFixed(2)} mm raised lettering and border.\r\nHole: 5.5 mm circular hole in the middle-left, inset 1 mm from the left edge, with a 0.6 mm raised border.\r\nTwo-colour printer: use the base/raised colour for the base and raised parts, and the panel colour for the panel.\r\n`);
     const blob = await outer.generateAsync({ type: 'blob', compression: 'DEFLATE' });
     if (downloads) await downloads.save({ filename: name + '.zip', data: blob });
